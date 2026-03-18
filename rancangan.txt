@@ -1,0 +1,57 @@
+====================================================================
+DOKUMEN SPESIFIKASI & RANCANGAN SISTEM
+TENNIS SMART TRAINING 3D
+====================================================================
+
+1. INFORMASI UMUM
+- Nama Aplikasi: Tennis Smart Training 3D.
+- Nama Antarmuka (UI): TennisPro 3D.
+- Platform: Single Page Application (SPA) berbasis Web (HTML, CSS, Vanilla JS) yang akan dibungkus menjadi aplikasi mobile (Android) via WebView.
+- Sasaran Pengguna: Atlet pemula tenis lapangan (usia sekitar 10–15 tahun) dan pelatih tenis.
+- Konsep Penggunaan: Satu perangkat (device) dipegang oleh atlet. Pelatih meminjam perangkat untuk memantau progress.
+
+2. TEKNOLOGI & LIBRARY
+- Frontend: HTML5, CSS3, Vanilla JavaScript.
+- 3D Engine: Three.js (Untuk merender file .glb / .gltf gerakan teknis).
+- Visualisasi Data: Chart.js (Untuk grafik perkembangan mingguan).
+- Manajemen Waktu: Day.js (Untuk perhitungan interval mingguan yang dimulai setiap hari Senin).
+- Ekspor Data: SheetJS / xlsx.js (Untuk mengekspor tabel ke format Excel / .xlsx).
+
+3. SISTEM AKUN & AUTENTIKASI
+A. Atlet
+   - Akses penuh ke seluruh halaman aplikasi.
+   - Login default: Username "Atlet", Password "atlet".
+   - Dapat mengubah kredensial di halaman Pengaturan Akun.
+   - Fitur Reset Akun: Menggunakan master password "root" untuk mereset username/password ke default tanpa menghapus data riwayat latihan dan asesmen di lokal.
+B. Pelatih
+   - Bypass login (tanpa password).
+   - Akses terbatas hanya ke Halaman Dashboard/Homescreen Pelatih (Read-Only).
+   - Fitur utama: Melihat keterangan akun atlet, memantau grafik progress, melihat riwayat asesmen/latihan, dan tombol "Export to Excel".
+
+4. STRUKTUR DATABASE LOKAL (localStorage)
+Berbasis JSON Relasional dengan ID unik (Primary/Foreign Key). Terdiri dari 6 key utama:
+- dataMateri (Master): Menyimpan daftar materi teknik (Grip, Forehand, Backhand, dll) dan referensi model 3D-nya.
+- dataAssessment (Master): Menyimpan indikator tes awal (Akurasi, dll).
+- dataLatihan (Master): Menyimpan daftar unit drill/latihan.
+- akunAtlet (Master): Menyimpan biodata dan kredensial login.
+- riwayatAssesment (Transaksional): Menyimpan nilai evaluasi beserta tanggal, terhubung dengan ID dataAssessment.
+- riwayatLatihan (Transaksional): Menyimpan status penyelesaian drill beserta tanggal, terhubung dengan ID dataLatihan.
+*Catatan: Jika data master (Materi, Assesment, Latihan) kosong saat aplikasi pertama dibuka, sistem akan melakukan "Auto-Seeding" (memasukkan data hardcoded).
+
+5. STRUKTUR HALAMAN & NAVIGASI (ATLET)
+Total 8 View/Halaman:
+1. Login
+2. Homescreen (Beranda): Grafik ringkasan progress.
+3. Pengaturan Akun: Ubah profil & kredensial, Logout.
+4. Materi & Animasi 3D: Daftar teknik dan canvas Three.js (digabung 1 alur).
+5. Assesment: Input nilai tes.
+6. Latihan: Checklist program latihan individual.
+7. Progress: Tabel riwayat lengkap (Latihan & Assesment), Grafik detail, Tombol Export to Excel.
+8. Evaluasi: Kuesioner mingguan.
+
+6. DESAIN ANTARMUKA (UI/UX)
+- Top Navbar / Header: Menggunakan Flexbox (justify-content: space-between, align-items: center).
+- Nama Aplikasi: Berada di kiri, menggunakan text-wrap agar rapi jika kepanjangan.
+- Menu Navigasi: Menggunakan Dropdown Menu di sebelah kanan (menggantikan Bottom Navigation Bar agar tidak sesak).
+- Optimasi Mobile: Menerapkan padding-top dinamis (calc(20px + env(safe-area-inset-top))) untuk menghindari poni kamera (notch) pada Android 11 ke atas.
+====================================================================
