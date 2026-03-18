@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Tennis Smart Training 3D</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header id="main-header" class="header-container" style="display: none;">
+        <h1 class="app-title">Tennis Smart Training 3D</h1>
+        
+        <div class="dropdown">
+            <button id="menu-btn" class="menu-button">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div id="dropdown-menu" class="dropdown-content">
+                <a href="#" class="nav-link" data-target="view-athlete-home">Beranda</a>
+                <a href="#" class="nav-link" data-target="view-material-3d">Materi & Animasi 3D</a>
+                <a href="#" class="nav-link" data-target="view-assessment">Assesment</a>
+                <a href="#" class="nav-link" data-target="view-training">Program Latihan</a>
+                <a href="#" class="nav-link" data-target="view-progress">Progress Latihan</a>
+                <a href="#" class="nav-link" data-target="view-evaluation">Evaluasi Mingguan</a>
+                <a href="#" class="nav-link" data-target="view-account">Pengaturan Akun</a>
+                <hr>
+                <a href="#" id="btn-logout" class="text-danger">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-container">
+
+        <section id="view-login" class="view-section active">
+            <div class="login-box">
+                <div class="logo-container">
+                    <h2>🎾 Tennis Smart Training 3D</h2>
+                </div>
+                <form id="login-form">
+                    <input type="text" id="login-username" placeholder="Email atau Username" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <button type="submit" id="btn-login-atlet" class="btn-primary">Masuk</button>
+                </form>
+                <div class="login-links">
+                    <button id="btn-register" class="btn-text">Daftar Atlet Baru ></button>
+                    <button id="btn-login-pelatih" class="btn-text">Masuk sebagai Pelatih ></button>
+                    <button id="btn-forgot-password" class="btn-text text-sm">Lupa Password?</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-athlete-home" class="view-section" >
+            <div class="welcome-card">
+                <h3 id="welcome-name">Selamat datang, Atlet!</h3>
+                <p id="welcome-level" class="badge">Beginner 1</p>
+            </div>
+            <div class="card">
+                <h4>Latihan Hari Ini</h4>
+                <div id="today-drill-summary">Memuat...</div>
+            </div>
+            <div class="card">
+                <h4>Progress Mingguan</h4>
+                <canvas id="chart-athlete-home"></canvas> 
+            </div>
+        </section>
+
+        <section id="view-coach-home" class="view-section" >
+            <h2>Dashboard Pelatih</h2>
+            <div class="card">
+                <label for="select-atlet">Pilih Atlet:</label>
+                <select id="select-atlet">
+                    <option value="ATL-001">Iraqi Maharani</option>
+                    </select>
+            </div>
+            <div class="card" id="coach-atlet-info">
+                </div>
+            <div class="card">
+                <div class="flex-between">
+                    <h4>Riwayat Latihan & Assesment</h4>
+                    <button id="btn-export-excel" class="btn-secondary"><i class="fas fa-file-excel"></i> Export</button>
+                </div>
+                <div class="table-responsive">
+                    <table id="table-coach-history">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Aktivitas</th>
+                                <th>Detail/Skor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-coach-history">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-material-3d" class="view-section" >
+            <div id="canvas-container" class="canvas-3d-wrapper">
+                <canvas id="canvas-3d"></canvas>
+                <div class="3d-controls">
+                    <button id="btn-3d-play"><i class="fas fa-play"></i></button>
+                    <button id="btn-3d-slow">Slow</button>
+                    <button id="btn-3d-reset">360°</button>
+                </div>
+            </div>
+            <div class="card list-materi" id="list-materi-container">
+                </div>
+        </section>
+
+        <section id="view-assessment" class="view-section" >
+            <h2>Tes Kemampuan</h2>
+            <div id="assessment-form-container">
+                </div>
+            <button id="btn-save-assessment" class="btn-primary mt-2">Simpan Nilai</button>
+        </section>
+
+        <section id="view-training" class="view-section" >
+            <h2>Program Latihan</h2>
+            <div id="training-checklist-container">
+                </div>
+            <button id="btn-finish-training" class="btn-primary mt-2">Selesaikan Latihan Hari Ini</button>
+        </section>
+
+        <section id="view-progress" class="view-section" >
+            <div class="flex-between">
+                <h2>Progress Anda</h2>
+                <button id="btn-export-athlete" class="btn-secondary"><i class="fas fa-file-excel"></i> Export</button>
+            </div>
+            <div class="card">
+                <canvas id="chart-athlete-progress"></canvas>
+            </div>
+            <div class="card mt-2 table-responsive">
+                <h4>Riwayat Lengkap</h4>
+                <table id="table-athlete-history">
+                    <thead>
+                        <tr><th>Tanggal</th><th>Jenis</th><th>Status/Nilai</th></tr>
+                    </thead>
+                    <tbody id="tbody-athlete-history"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="view-evaluation" class="view-section" >
+            <h2>Evaluasi Mingguan</h2>
+            <form id="eval-form" class="card">
+                <div class="form-group">
+                    <label>Apakah latihan terasa terlalu mudah?</label>
+                    <select id="eval-mudah"><option value="ya">Ya</option><option value="tidak">Tidak</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Apakah teknik lebih stabil?</label>
+                    <select id="eval-stabil"><option value="ya">Ya</option><option value="tidak">Tidak</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Apakah ada keluhan nyeri?</label>
+                    <select id="eval-nyeri"><option value="ya">Ya</option><option value="tidak">Tidak</option></select>
+                </div>
+                <button type="button" id="btn-submit-eval" class="btn-primary mt-2">Update Program</button>
+            </form>
+        </section>
+
+               <section id="view-account" class="view-section">
+            <h2>Profil & Pengaturan</h2>
+            <form id="account-form" class="card">
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="acc-nama" required>
+                </div>
+                <div class="form-group">
+                    <label>Username (Untuk Login)</label>
+                    <input type="text" id="acc-username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="text" id="acc-password" required>
+                </div>
+                <div class="form-group">
+                    <label>Usia (Tahun)</label>
+                    <input type="number" id="acc-usia" required>
+                </div>
+                <div class="form-group">
+                    <label>Tinggi Badan (cm)</label>
+                    <input type="number" id="acc-tinggi" required>
+                </div>
+                <div class="form-group">
+                    <label>Lama Latihan (Bulan)</label>
+                    <input type="number" id="acc-lama">
+                </div>
+                <div class="form-group">
+                    <label>Level Atlet</label>
+                    <select id="acc-level">
+                        <option value="Beginner 1">Beginner 1</option>
+                        <option value="Beginner 2">Beginner 2</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Kelemahan Utama</label>
+                    <input type="text" id="acc-kelemahan">
+                </div>
+                <button type="button" id="btn-save-account" class="btn-primary mt-2">Simpan Perubahan</button>
+            </form>
+        </section>
+
+
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <script src="database_seeder.js"></script> <script src="app.js"></script> </body>
+</html>
