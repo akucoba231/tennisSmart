@@ -83,6 +83,9 @@ function navigateTo(viewId) {
         if (viewId === 'view-assessment') renderAssessmentForm();
         if (viewId === 'view-progress') renderAthleteProgress(); // <--- TAMBAHKAN BARIS INI
         if (viewId === 'view-account') renderAccountForm();
+        
+        // TAMBAHKAN BARIS INI:
+        if (viewId === 'view-material-3d') renderMaterial3D();
 
 
     }
@@ -694,3 +697,78 @@ function renderAccountForm() {
     };
 }
 
+
+/* ==========================================================================
+   FITUR MATERI & ANIMASI 3D
+   ========================================================================== */
+function renderMaterial3D() {
+    // Mengambil data dari localStorage (Pastikan database_seeder.js sudah diupdate dengan JSON baru)
+    const dataMateri = JSON.parse(localStorage.getItem('dataMateri')) || [];
+    
+    const containerButtons = document.getElementById('materi-buttons');
+    const detailContainer = document.getElementById('materi-detail-container');
+
+    // Bersihkan daftar tombol sebelumnya
+    containerButtons.innerHTML = '';
+
+    // Sembunyikan container detail saat halaman pertama kali dimuat
+    detailContainer.style.display = 'none';
+
+    if (dataMateri.length === 0) {
+        containerButtons.innerHTML = '<p class="text-danger">Data materi belum tersedia.</p>';
+        return;
+    }
+
+    // Looping data JSON untuk membuat list tombol
+    dataMateri.forEach(materi => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-secondary';
+        btn.style.textAlign = 'left';
+        btn.style.padding = '12px';
+        btn.style.backgroundColor = 'var(--white)';
+        btn.style.color = 'var(--dark-text)';
+        btn.style.border = '1px solid var(--border-color)';
+        btn.innerHTML = `<i class="fas fa-cube" style="color: var(--primary-blue); margin-right: 8px;"></i> <strong>${materi.judul}</strong>`;
+
+        // Event saat tombol materi diklik
+        btn.onclick = () => {
+            // 1. Tampilkan container detail
+            detailContainer.style.display = 'block';
+
+            // 2. Isi data judul dan deskripsi
+            document.getElementById('materi-title').textContent = materi.judul;
+            document.getElementById('materi-desc').textContent = materi.deskripsi;
+
+            // 3. Isi langkah-langkah ke dalam list <ol>
+            const stepsContainer = document.getElementById('materi-steps');
+            stepsContainer.innerHTML = ''; // Kosongkan daftar sebelumnya
+            
+            if (materi.langkah && materi.langkah.length > 0) {
+                materi.langkah.forEach(langkah => {
+                    const li = document.createElement('li');
+                    li.textContent = langkah;
+                    li.style.marginBottom = '6px';
+                    stepsContainer.appendChild(li);
+                });
+            } else {
+                stepsContainer.innerHTML = '<li>Tidak ada detail langkah.</li>';
+            }
+
+            // 4. Highlight tombol yang sedang aktif
+            document.querySelectorAll('#materi-buttons button').forEach(b => {
+                b.style.borderColor = 'var(--border-color)';
+                b.style.backgroundColor = 'var(--white)';
+            });
+            btn.style.borderColor = 'var(--primary-blue)';
+            btn.style.backgroundColor = '#F0F4F8';
+
+            // 5. (Opsional) Trigger ke Three.js untuk mengganti model .glb nantinya
+            console.log(`Mengganti model 3D ke: ${materi.model3D}`);
+            
+            // 6. Scroll layar ke bagian detail agar atlet langsung bisa membaca
+            detailContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        containerButtons.appendChild(btn);
+    });
+}
