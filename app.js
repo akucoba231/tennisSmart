@@ -701,72 +701,98 @@ function renderAccountForm() {
 /* ==========================================================================
    FITUR MATERI & ANIMASI 3D
    ========================================================================== */
+/* ==========================================================================
+   FITUR MATERI & ANIMASI 3D (UX Diperbarui)
+   ========================================================================== */
 function renderMaterial3D() {
-    // Mengambil data dari localStorage (Pastikan database_seeder.js sudah diupdate dengan JSON baru)
     const dataMateri = JSON.parse(localStorage.getItem('dataMateri')) || [];
     
+    // Ambil elemen DOM
+    const listView = document.getElementById('materi-list-view');
+    const detailView = document.getElementById('materi-detail-view');
     const containerButtons = document.getElementById('materi-buttons');
-    const detailContainer = document.getElementById('materi-detail-container');
+    const btnKembaliList = document.querySelectorAll('.btn-kembali');
 
-    // Bersihkan daftar tombol sebelumnya
-    containerButtons.innerHTML = '';
-
-    // Sembunyikan container detail saat halaman pertama kali dimuat
-    detailContainer.style.display = 'none';
+    // RESET STATE: Tampilkan List, Sembunyikan Detail saat menu diakses dari Navigasi
+    listView.style.display = 'block';
+    detailView.style.display = 'none';
+    containerButtons.innerHTML = ''; // Bersihkan tombol lama
 
     if (dataMateri.length === 0) {
         containerButtons.innerHTML = '<p class="text-danger">Data materi belum tersedia.</p>';
         return;
     }
 
-    // Looping data JSON untuk membuat list tombol
+    // FUNGSI TOMBOL KEMBALI
+    btnKembaliList.forEach(btn => {
+        btn.onclick = () => {
+            detailView.style.display = 'none';
+            listView.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll otomatis ke atas
+        };
+    });
+
+    // RENDER TOMBOL DAFTAR MATERI
     dataMateri.forEach(materi => {
         const btn = document.createElement('button');
-        btn.className = 'btn-secondary';
+        
+        // Styling langsung via JS agar terlihat seperti card menu yang bisa diklik
+        btn.style.width = '100%';
         btn.style.textAlign = 'left';
-        btn.style.padding = '12px';
+        btn.style.padding = '15px';
         btn.style.backgroundColor = 'var(--white)';
         btn.style.color = 'var(--dark-text)';
         btn.style.border = '1px solid var(--border-color)';
-        btn.innerHTML = `<i class="fas fa-cube" style="color: var(--primary-blue); margin-right: 8px;"></i> <strong>${materi.judul}</strong>`;
+        btn.style.borderRadius = '10px';
+        btn.style.cursor = 'pointer';
+        btn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.02)';
+        
+        // Desain isi tombol: Ikon, Judul, dan tanda panah ">"
+        btn.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <i class="fas fa-cube" style="color: var(--primary-blue); margin-right: 12px; font-size: 1.2rem;"></i> 
+                    <strong style="font-size: 1.05rem;">${materi.judul}</strong>
+                </div>
+                <i class="fas fa-chevron-right" style="color: #bbb;"></i>
+            </div>
+        `;
 
-        // Event saat tombol materi diklik
+        // SAAT MATERI DIKLIK
         btn.onclick = () => {
-            // 1. Tampilkan container detail
-            detailContainer.style.display = 'block';
+            // 1. Ganti Tampilan: Sembunyikan List, Munculkan Detail
+            listView.style.display = 'none';
+            detailView.style.display = 'block';
 
-            // 2. Isi data judul dan deskripsi
+            // 2. Isi konten Teks
             document.getElementById('materi-title').textContent = materi.judul;
             document.getElementById('materi-desc').textContent = materi.deskripsi;
 
-            // 3. Isi langkah-langkah ke dalam list <ol>
             const stepsContainer = document.getElementById('materi-steps');
-            stepsContainer.innerHTML = ''; // Kosongkan daftar sebelumnya
+            stepsContainer.innerHTML = ''; 
             
             if (materi.langkah && materi.langkah.length > 0) {
                 materi.langkah.forEach(langkah => {
                     const li = document.createElement('li');
                     li.textContent = langkah;
-                    li.style.marginBottom = '6px';
+                    li.style.marginBottom = '8px';
                     stepsContainer.appendChild(li);
                 });
             } else {
                 stepsContainer.innerHTML = '<li>Tidak ada detail langkah.</li>';
             }
 
-            // 4. Highlight tombol yang sedang aktif
-            document.querySelectorAll('#materi-buttons button').forEach(b => {
-                b.style.borderColor = 'var(--border-color)';
-                b.style.backgroundColor = 'var(--white)';
-            });
-            btn.style.borderColor = 'var(--primary-blue)';
-            btn.style.backgroundColor = '#F0F4F8';
+            // 3. PENTING UNTUK CANVAS 3D:
+            // Elemen <canvas> sering mengalami "glitch" ukuran (gepeng/mengecil) jika dirender 
+            // saat container induknya dalam status 'display: none'.
+            // Karena kita baru mengubah display menjadi 'block', kita berikan trigger resize paksa
+            // agar Three.js menyesuaikan ulang ukuran canvasnya.
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+            }, 50);
 
-            // 5. (Opsional) Trigger ke Three.js untuk mengganti model .glb nantinya
-            console.log(`Mengganti model 3D ke: ${materi.model3D}`);
-            
-            // 6. Scroll layar ke bagian detail agar atlet langsung bisa membaca
-            detailContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // 4. Scroll ke atas otomatis
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         containerButtons.appendChild(btn);
