@@ -23,6 +23,11 @@ const initLokalDatabase = () => {
         const materiDasar = materi_json;
         localStorage.setItem('dataMateri', JSON.stringify(materiDasar));
     }
+    else {
+    	localStorage.removeItem('dataMateri');
+    	const materiDasar = materi_json;
+        localStorage.setItem('dataMateri', JSON.stringify(materiDasar));
+    }
 
     // 3. Master Data: Indikator Assessment (Sesuai Desain UI)
     if (!localStorage.getItem('dataAssessment')) {
