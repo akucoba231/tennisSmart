@@ -20,11 +20,7 @@ const initLokalDatabase = () => {
 
     // 2. Master Data: Materi Teknik & Referensi Animasi 3D (.glb)
     if (!localStorage.getItem('dataMateri')) {
-        const materiDasar = [
-            { id: "MAT-01", judul: "Grip & Ready Position", model3D: "boy_swinging_racket.glb", deskripsi: "Posisi siap dan cara memegang raket." },
-            { id: "MAT-02", judul: "Forehand Swing Technique", model3D: "forehand_swing.glb", deskripsi: "Teknik ayunan forehand dari berbagai sudut." },
-            { id: "MAT-03", judul: "General Practice", model3D: "general_practice.glb", deskripsi: "Simulasi gerakan kaki dan pukulan dasar." }
-        ];
+        const materiDasar = materi_json;
         localStorage.setItem('dataMateri', JSON.stringify(materiDasar));
     }
 
