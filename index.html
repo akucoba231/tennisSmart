@@ -98,29 +98,50 @@
             </div>
         </section>
 
-        <section id="view-material-3d" class="view-section" >
-            <div id="canvas-container" class="canvas-3d-wrapper">
-                <canvas id="canvas-3d"></canvas>
-                <div class="3d-controls">
-                    <button id="btn-3d-play"><i class="fas fa-play"></i></button>
-                    <button id="btn-3d-slow">Slow</button>
-                    <button id="btn-3d-reset">360°</button>
+        <section id="view-material-3d" class="view-section">
+            
+            <!-- 1. TAMPILAN DAFTAR MATERI (Ditampilkan di awal) -->
+            <div id="materi-list-view">
+                <h2>Materi & Animasi 3D</h2>
+                <div class="card list-materi">
+                    <p class="text-sm" style="margin-bottom: 15px; color: #666;">Pilih materi di bawah ini untuk melihat animasi 3D dan langkah-langkah detailnya.</p>
+                    <div id="materi-buttons" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Tombol list materi akan digenerate JavaScript di sini -->
+                    </div>
                 </div>
             </div>
 
-            <!-- TAMBAHAN: Kontainer untuk menampilkan Detail Langkah-Langkah -->
-            <div class="card" id="materi-detail-container" style="display: none; margin-bottom: 15px;">
-                <h3 id="materi-title" style="color: var(--primary-blue);">Judul Materi</h3>
-                <p id="materi-desc" style="font-size: 0.9rem; margin-bottom: 10px; color: #555;"></p>
-                <h4 style="font-size: 1rem; margin-bottom: 8px;">Langkah-langkah:</h4>
-                <ol id="materi-steps" style="padding-left: 20px; font-size: 0.95rem; line-height: 1.6;"></ol>
-            </div>
+            <!-- 2. TAMPILAN DETAIL & CANVAS 3D (Disembunyikan di awal) -->
+            <div id="materi-detail-view" style="display: none;">
+                
+                <!-- Tombol Kembali (Atas) -->
+                <button class="btn-kembali btn-secondary" style="margin-bottom: 15px; background-color: #f44336; width: 100%; border-radius: 8px;">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Daftar Materi
+                </button>
 
-            <div class="card list-materi" id="list-materi-container">
-                <h4>Pilih Materi Teknik</h4>
-                <div id="materi-buttons" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                    <!-- Tombol list materi akan digenerate secara native oleh JavaScript di sini -->
+                <!-- Canvas 3D -->
+                <div id="canvas-container" class="canvas-3d-wrapper">
+                    <canvas id="canvas-3d"></canvas>
+                    <div class="3d-controls">
+                        <button id="btn-3d-play"><i class="fas fa-play"></i></button>
+                        <button id="btn-3d-slow">Slow</button>
+                        <button id="btn-3d-reset">360°</button>
+                    </div>
                 </div>
+
+                <!-- Detail Langkah -->
+                <div class="card" id="materi-detail-container" style="margin-bottom: 15px;">
+                    <h3 id="materi-title" style="color: var(--primary-blue);">Judul Materi</h3>
+                    <p id="materi-desc" style="font-size: 0.9rem; margin-bottom: 10px; color: #555;"></p>
+                    <h4 style="font-size: 1rem; margin-bottom: 8px;">Langkah-langkah:</h4>
+                    <ol id="materi-steps" style="padding-left: 20px; font-size: 0.95rem; line-height: 1.6; margin-bottom: 0;"></ol>
+                </div>
+
+                <!-- Tombol Kembali (Bawah) -->
+                <button class="btn-kembali btn-secondary" style="margin-bottom: 20px; background-color: #f44336; width: 100%; border-radius: 8px;">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Daftar Materi
+                </button>
+
             </div>
         </section>
 
