@@ -73,10 +73,10 @@
                 <label for="select-atlet">Pilih Atlet:</label>
                 <select id="select-atlet">
                     <option value="ATL-001">Iraqi Maharani</option>
-                    </select>
+                </select>
             </div>
             <div class="card" id="coach-atlet-info">
-                </div>
+            </div>
             <div class="card">
                 <div class="flex-between">
                     <h4>Riwayat Latihan & Assesment</h4>
@@ -92,14 +92,14 @@
                             </tr>
                         </thead>
                         <tbody id="tbody-coach-history">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
         </section>
 
         <section id="view-material-3d" class="view-section">
-            
+
             <!-- 1. TAMPILAN DAFTAR MATERI (Ditampilkan di awal) -->
             <div id="materi-list-view">
                 <h2>Materi & Animasi 3D</h2>
@@ -113,19 +113,31 @@
 
             <!-- 2. TAMPILAN DETAIL & CANVAS 3D (Disembunyikan di awal) -->
             <div id="materi-detail-view" style="display: none;">
-                
+
                 <!-- Tombol Kembali (Atas) -->
                 <button class="btn-kembali btn-secondary" style="margin-bottom: 15px; background-color: #f44336; width: 100%; border-radius: 8px;">
                     <i class="fas fa-arrow-left"></i> Kembali ke Daftar Materi
                 </button>
 
                 <!-- Canvas 3D -->
-                <div id="canvas-container" class="canvas-3d-wrapper">
-                    <canvas id="canvas-3d"></canvas>
-                    <div class="3d-controls">
-                        <button id="btn-3d-play"><i class="fas fa-play"></i></button>
-                        <button id="btn-3d-slow">Slow</button>
-                        <button id="btn-3d-reset">360°</button>
+                <div id="canvas-container" style="position: relative; width: 100%; height: 50vh; background: #2C3E50; border-radius: 10px; overflow: hidden; margin-top: 15px;">
+
+                    <canvas id="canvas-3d" style="width: 100%; height: 100%; display: block;"></canvas>
+
+                    <div id="controls-3d" style="position: absolute; bottom: 0; left: 0; transform: scale(0.7); display: flex; gap: 10px; background: rgba(255, 255, 255, 0.85); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10;">
+
+                        <button id="btn-3d-play" style="padding: 8px 15px; border: none; border-radius: 6px; background: #3b82f6; color: white; cursor: pointer; font-size: 1rem;">
+                            <i class="fas fa-pause"></i>
+                        </button>
+
+                        <button id="btn-3d-slow" style="padding: 8px 15px; border: none; border-radius: 6px; background: #64748b; color: white; cursor: pointer; font-size: 0.9rem; font-weight: bold;">
+                            <i class="fas fa-running"></i> Slow
+                        </button>
+
+                        <button id="btn-3d-reset" style="padding: 8px 15px; border: none; border-radius: 6px; background: #ef4444; color: white; cursor: pointer; font-size: 0.9rem; font-weight: bold;">
+                            <i class="fas fa-sync-alt"></i> Reset
+                        </button>
+
                     </div>
                 </div>
 
@@ -148,14 +160,14 @@
         <section id="view-assessment" class="view-section" >
             <h2>Tes Kemampuan</h2>
             <div id="assessment-form-container">
-                </div>
+            </div>
             <button id="btn-save-assessment" class="btn-primary mt-2">Simpan Nilai</button>
         </section>
 
         <section id="view-training" class="view-section" >
             <h2>Program Latihan</h2>
             <div id="training-checklist-container">
-                </div>
+            </div>
             <button id="btn-finish-training" class="btn-primary mt-2">Selesaikan Latihan Hari Ini</button>
         </section>
 
@@ -197,7 +209,7 @@
             </form>
         </section>
 
-               <section id="view-account" class="view-section">
+        <section id="view-account" class="view-section">
             <h2>Profil & Pengaturan</h2>
             <form id="account-form" class="card">
                 <div class="form-group">
@@ -243,9 +255,10 @@
 
 
     </main>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -253,6 +266,7 @@
     
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="dataMateri.js"></script>
+    <script src="Viewer3D.js"></script>
 
     <script src="database_seeder.js"></script> <script src="app.js"></script> </body>
-</html>
+    </html>
