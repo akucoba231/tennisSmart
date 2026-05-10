@@ -7,11 +7,14 @@ let currentRole = null; // 'atlet' atau 'pelatih'
 let chartMingguan = null; // Menyimpan instance Chart.js
 let scene3D, camera3D, renderer3D; // Instance Three.js
 
+// Buat instance global agar bisa diakses oleh tombol kontrol
+let materi3DViewer = null;
+
 // --- INISIALISASI SAAT HALAMAN DIMUAT ---
 document.addEventListener("DOMContentLoaded", () => {
     initNavigation();
     initAuth();
-    initThreeJSBoilerplate();
+    //initThreeJSBoilerplate();
 });
 
 /* ==========================================================================
@@ -610,52 +613,52 @@ function renderChart(canvasId, title) {
 }
 
 
-function initThreeJSBoilerplate() {
-    // Ini adalah kerangka dasar Three.js. 
-    // Untuk me-load file .glb, Anda memerlukan Local Server (VSCode Live Server dll) karena batasan CORS browser.
-    const canvas = document.getElementById('canvas-3d');
-    if (!canvas) return;
+// function initThreeJSBoilerplate() {
+//     // Ini adalah kerangka dasar Three.js. 
+//     // Untuk me-load file .glb, Anda memerlukan Local Server (VSCode Live Server dll) karena batasan CORS browser.
+//     const canvas = document.getElementById('canvas-3d');
+//     if (!canvas) return;
 
-    scene3D = new THREE.Scene();
-    scene3D.background = new THREE.Color(0x2C3E50); // Warna latar gelap sesuai CSS
+//     scene3D = new THREE.Scene();
+//     scene3D.background = new THREE.Color(0x2C3E50); // Warna latar gelap sesuai CSS
 
-    camera3D = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-    camera3D.position.z = 5;
+//     camera3D = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+//     camera3D.position.z = 5;
 
-    renderer3D = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-    renderer3D.setSize(canvas.clientWidth, canvas.clientHeight);
+//     renderer3D = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+//     renderer3D.setSize(canvas.clientWidth, canvas.clientHeight);
 
-    // Tambahkan cahaya
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(2, 2, 5);
-    scene3D.add(light);
-    scene3D.add(new THREE.AmbientLight(0x404040));
+//     // Tambahkan cahaya
+//     const light = new THREE.DirectionalLight(0xffffff, 1);
+//     light.position.set(2, 2, 5);
+//     scene3D.add(light);
+//     scene3D.add(new THREE.AmbientLight(0x404040));
 
-    // Tambahkan objek dummy (Kubus) sebagai placeholder karena file .glb belum di-hosting
-    const geometry = new THREE.BoxGeometry();
-    const material = new THREE.MeshStandardMaterial({ color: 0x4CAF50 });
-    const cube = new THREE.Mesh(geometry, material);
-    scene3D.add(cube);
+//     // Tambahkan objek dummy (Kubus) sebagai placeholder karena file .glb belum di-hosting
+//     const geometry = new THREE.BoxGeometry();
+//     const material = new THREE.MeshStandardMaterial({ color: 0x4CAF50 });
+//     const cube = new THREE.Mesh(geometry, material);
+//     scene3D.add(cube);
 
-    // Animasi putar
-    function animate() {
-        requestAnimationFrame(animate);
-        cube.rotation.x += 0.01;
-        cube.rotation.y += 0.01;
-        renderer3D.render(scene3D, camera3D);
-    }
-    animate();
+//     // Animasi putar
+//     function animate() {
+//         requestAnimationFrame(animate);
+//         cube.rotation.x += 0.01;
+//         cube.rotation.y += 0.01;
+//         renderer3D.render(scene3D, camera3D);
+//     }
+//     animate();
 
-    // Responsif jika layar diubah ukurannya
-    window.addEventListener('resize', () => {
-        const wrapper = document.getElementById('canvas-container');
-        if(wrapper) {
-            camera3D.aspect = wrapper.clientWidth / wrapper.clientHeight;
-            camera3D.updateProjectionMatrix();
-            renderer3D.setSize(wrapper.clientWidth, wrapper.clientHeight);
-        }
-    });
-}
+//     // Responsif jika layar diubah ukurannya
+//     window.addEventListener('resize', () => {
+//         const wrapper = document.getElementById('canvas-container');
+//         if(wrapper) {
+//             camera3D.aspect = wrapper.clientWidth / wrapper.clientHeight;
+//             camera3D.updateProjectionMatrix();
+//             renderer3D.setSize(wrapper.clientWidth, wrapper.clientHeight);
+//         }
+//     });
+// }
 
 // --- FUNGSI PENGATURAN AKUN ---
 function renderAccountForm() {
@@ -728,9 +731,19 @@ function renderMaterial3D() {
         btn.onclick = () => {
             detailView.style.display = 'none';
             listView.style.display = 'block';
+            if (materi3DViewer) materi3DViewer.stop(); // Hentikan render loop
+            
             window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll otomatis ke atas
         };
     });
+
+
+    // Jika viewer belum ada, inisialisasi HANYA SEKALI
+    if (!materi3DViewer) {
+        materi3DViewer = new Viewer3D('canvas-3d');
+        setup3DButtons(); // Pasang event listener tombol kontrol
+    }
+
 
     // RENDER TOMBOL DAFTAR MATERI
     dataMateri.forEach(materi => {
@@ -788,13 +801,56 @@ function renderMaterial3D() {
             // Karena kita baru mengubah display menjadi 'block', kita berikan trigger resize paksa
             // agar Three.js menyesuaikan ulang ukuran canvasnya.
             setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
+                materi3DViewer.resize();
             }, 50);
 
             // 4. Scroll ke atas otomatis
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // ========================================================
+            // 5. MUAT MODEL 3D (BAGIAN INI SEBELUMNYA TERLEWAT)
+            // ========================================================
+            if (materi.model3D) {
+                // Pastikan path ini sesuai dengan folder tempat Anda menyimpan file GLTF
+                const pathFolder = "assets/models/"; 
+                materi3DViewer.loadModel(pathFolder + materi.model3D);
+            }
         };
 
         containerButtons.appendChild(btn);
+    });
+}
+
+// Fungsi untuk menghubungkan tombol UI dengan logika Modul Viewer3D
+function setup3DButtons() {
+    const btnPlay = document.getElementById('btn-3d-play');
+    const btnSlow = document.getElementById('btn-3d-slow');
+    const btnReset = document.getElementById('btn-3d-reset');
+    
+    let isSlowMo = false;
+
+    btnPlay.onclick = () => {
+        const isPlaying = materi3DViewer.togglePlayPause();
+        // Ganti ikon FontAwesome
+        btnPlay.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    };
+
+    btnSlow.onclick = () => {
+        isSlowMo = !isSlowMo;
+        materi3DViewer.setSlowMotion(isSlowMo);
+        // Ubah warna/teks tombol sebagai indikator aktif
+        btnSlow.style.backgroundColor = isSlowMo ? '#f44336' : ''; 
+        btnSlow.style.color = isSlowMo ? 'white' : '';
+    };
+
+    btnReset.onclick = () => {
+        materi3DViewer.resetCamera();
+    };
+
+    // Dengarkan event resize layar
+    window.addEventListener('resize', () => {
+        if (document.getElementById('materi-detail-view').style.display === 'block') {
+            materi3DViewer.resize();
+        }
     });
 }
