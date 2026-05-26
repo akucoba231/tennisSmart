@@ -2,7 +2,7 @@ let materi_json = [
   {
     "id": "MAT-01",
     "judul": "Sikap Siap (Ready Position)",
-    "model3D": "ready_position.glb",
+    "model3D": "ready_idle-compressed.glb",
     "deskripsi": "Sikap awal bersiap sebelum melakukan gerakan atau menerima bola.",
     "langkah": [
       "Berdiri tegak menghadap net.",
@@ -17,7 +17,7 @@ let materi_json = [
   {
     "id": "MAT-02",
     "judul": "Footwork (Gerakan Kaki)",
-    "model3D": "footwork.glb",
+    "model3D": "footwork-compressed.glb",
     "deskripsi": "Teknik pergerakan kaki untuk memposisikan tubuh dengan ideal.",
     "langkah": [
       "Berdiri dalam posisi siap.",
@@ -32,7 +32,7 @@ let materi_json = [
   {
     "id": "MAT-03",
     "judul": "Forehand",
-    "model3D": "forehand.glb",
+    "model3D": "forehand-compressed.glb",
     "deskripsi": "Pukulan dasar dari sisi dominan tubuh.",
     "langkah": [
       "Berdiri dalam posisi siap, lutut sedikit ditekuk.",
@@ -48,7 +48,7 @@ let materi_json = [
   {
     "id": "MAT-04",
     "judul": "Backhand",
-    "model3D": "backhand.glb",
+    "model3D": "backhand-compressed.glb",
     "deskripsi": "Pukulan dasar dari sisi non-dominan tubuh.",
     "langkah": [
       "Berdiri dalam posisi siap.",
@@ -80,7 +80,7 @@ let materi_json = [
   {
     "id": "MAT-06",
     "judul": "Volley Forehand",
-    "model3D": "volley_forehand.glb",
+    "model3D": "volley_forehand-compressed.glb",
     "deskripsi": "Pukulan forehand di udara sebelum bola memantul di lapangan.",
     "langkah": [
       "Berdiri dekat net dengan posisi siap.",
@@ -96,7 +96,7 @@ let materi_json = [
   {
     "id": "MAT-07",
     "judul": "Volley Backhand",
-    "model3D": "volley_backhand.glb",
+    "model3D": "volley_backhand-compressed.glb",
     "deskripsi": "Pukulan backhand di udara sebelum bola memantul.",
     "langkah": [
       "Berdiri dekat net dalam posisi siap.",
