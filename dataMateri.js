@@ -32,7 +32,7 @@ let materi_json = [
   {
     "id": "MAT-03",
     "judul": "Forehand",
-    "model3D": "forehand-compressed.glb",
+    "model3D": "forehand.glb",
     "deskripsi": "Pukulan dasar dari sisi dominan tubuh.",
     "langkah": [
       "Berdiri dalam posisi siap, lutut sedikit ditekuk.",
@@ -48,7 +48,7 @@ let materi_json = [
   {
     "id": "MAT-04",
     "judul": "Backhand",
-    "model3D": "backhand-compressed.glb",
+    "model3D": "backhand.glb",
     "deskripsi": "Pukulan dasar dari sisi non-dominan tubuh.",
     "langkah": [
       "Berdiri dalam posisi siap.",
