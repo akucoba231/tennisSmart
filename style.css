@@ -166,6 +166,7 @@ body {
     display: none; /* Sembunyikan semua halaman */
     background: rgba(255,255,255,0);
     animation: fadeIn 0.3s ease-in-out;
+    position: relative;
 }
 
 .view-section.active {
@@ -201,10 +202,11 @@ body {
 }
 
 /* Typography & Utilities */
-h2 { font-size: 1.4rem; margin-bottom: 15px; color: var(--primary-blue); }
+h2 { font-size: 1.4rem; margin-bottom: 15px; color: var(--primary-blue); text-shadow: 2px 2px #fff;}
 h3 { margin-bottom: 5px; }
 h4 { margin-bottom: 10px; color: var(--dark-text); font-size: 1.1rem; }
-.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; flex-direction: column; flex-wrap: nowrap;}
+.flex-between h2 {max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 .mt-2 { margin-top: 15px; }
 .text-danger { color: var(--danger) !important; font-weight: bold; }
 .text-sm { font-size: 0.85rem; }
@@ -321,3 +323,162 @@ tr:nth-child(even) { background-color: #FAFAFA; }
 /* Animasi */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+/* ==========================================================================
+   GAYA INTERFASE UNTUK MODAL REGISTRASI
+   ========================================================================== */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 2000;
+    display: block;
+}
+
+.modal-content {
+    background-color: var(--white);
+    width: 90%;
+    max-width: 380px;
+    margin: 5vh auto;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    padding: 20px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: fadeInDown 0.25s ease-out;
+}
+
+.modal-header {
+    display: table;
+    width: 100%;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+.modal-header h3 {
+    display: table-cell;
+    vertical-align: middle;
+    color: var(--primary-blue);
+}
+.close-button {
+    display: table-cell;
+    text-align: right;
+    font-size: 1.8rem;
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    width: 30px;
+}
+.close-button:hover { color: var(--danger); }
+
+/* Tab Menu Styles */
+.modal-tabs {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    margin-bottom: 20px;
+    background: #eee;
+    border-radius: 8px;
+    padding: 3px;
+}
+.tab-btn {
+    display: table-cell;
+    background: none;
+    border: none;
+    padding: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    text-align: center;
+    border-radius: 6px;
+}
+.tab-btn.active {
+    background-color: var(--white);
+    color: var(--primary-blue);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Konten Visibilitas Form */
+.form-reg-content {
+    display: none;
+}
+.form-reg-content.active {
+    display: block;
+}
+
+#table-progress-list tr > * {
+    white-space: nowrap;
+}
+
+#eval-form {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    width: 100%;
+    display: none;
+}
+
+#eval-form .eval-btn {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1%;
+    justify-content: center;
+    align-items: center;
+}
+
+#eval-form .eval-btn button {
+    padding: 3% 5%;
+    color: #fff;
+    border-radius: 8px;
+    transition: 0.5s;
+}
+
+#eval-form .eval-btn button:hover {
+    transform: scale(0.95);
+    box-shadow: inset 2px 2px 3px #000;
+}
+
+#eval-form .eval-btn button:nth-child(1){
+    background-color: var(--dark-text);
+}
+
+#eval-form .eval-btn button:nth-child(2){
+    background-color: var(--secondary-green);
+}
+
+.eval-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap:  2%;
+    overflow: hidden;
+}
+
+.eval-content button {
+    padding: 2% 3%;
+    border-radius: 8px;
+    background-color: var(--secondary-green);
+    color: #fff;
+}
+
+.eval-content table {
+    width: 100%;
+    overflow: scroll;
+    display: block;
+}
+
+.eval-content table thead tr th {
+    white-space: nowrap;
+}
+
+.eval-content table tbody tr td {
+    background-color: #fff;
+    text-align: center;
+}
