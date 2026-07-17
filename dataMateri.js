@@ -64,7 +64,7 @@ let materi_json = [
   {
     "id": "MAT-05",
     "judul": "Servis",
-    "model3D": "servis.glb",
+    "model3D": "new-c.glb",
     "deskripsi": "Pukulan pertama untuk memulai permainan.",
     "langkah": [
       "Berdiri di belakang garis baseline.",
