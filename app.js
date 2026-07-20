@@ -32,7 +32,7 @@ function showToast(message, type = 'success') {
 }
 
 // --- API HELPER ---
-const API_URL = 'https://smarttenis.pjokserver.my.id/api';
+const API_URL = 'http://localhost:8080/api';
 
 async function fetchAPI(endpoint, method = 'GET', body = null) {
     showLoader();
@@ -69,11 +69,37 @@ let scene3D, camera3D, renderer3D; // Instance Three.js
 let materi3DViewer = null;
 
 // --- INISIALISASI SAAT HALAMAN DIMUAT ---
+// --- INISIALISASI SAAT HALAMAN DIMUAT ---
 document.addEventListener("DOMContentLoaded", () => {
     initNavigation();
     initAuth();
     //initThreeJSBoilerplate();
+
+    // TAMBAHKAN PENGECEKAN SESI DI SINI
+    checkExistingSession();
 });
+
+// FUNGSI BARU UNTUK MENGECEK SESI
+function checkExistingSession() {
+    const savedSession = JSON.parse(sessionStorage.getItem('app_session'));
+    
+    // Jika ada data sesi yang tersimpan
+    if (savedSession && savedSession.id_user) {
+        currentRole = savedSession.role; // Kembalikan state global currentRole
+        
+        // Arahkan ke dashboard yang sesuai dan atur tampilan menu
+        if (currentRole === 'atlet') {
+            setupAthleteMenu();
+            navigateTo('view-athlete-home');
+        } else if (currentRole === 'pelatih') {
+            setupCoachMenu();
+            navigateTo('view-coach-home');
+        }
+    } else {
+        // Jika tidak ada sesi, pastikan berada di halaman login
+        navigateTo('view-login');
+    }
+}
 
 /* ==========================================================================
    1. SISTEM NAVIGASI SPA & DROPDOWN MENU
