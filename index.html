@@ -12,9 +12,22 @@
 </head>
 <body>
 
+    <!-- LOADER OVERLAY -->
+    <div id="app-loader" class="loader-overlay" style="display: none;">
+        <div style="text-align: center;">
+            <div class="spinner" style="margin: 0 auto 15px auto;"></div>
+            <p style="color: var(--primary-blue); font-weight: bold; margin: 0;">Sedang memuat data...</p>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="app-toast" class="toast-container"></div>
+
     <header id="main-header" class="header-container" style="display: none;">
+	<div style="width:90%;">
         <h1 class="app-title">Tennis Smart Training 3D</h1>
-        
+        <p>by Iraqi Maharani, S. Pd</p>
+	</div>
         <div class="dropdown">
             <button id="menu-btn" class="menu-button">
                 <i class="fas fa-bars"></i>
@@ -120,6 +133,7 @@
         <div class="login-box">
             <div class="logo-container">
                 <h2>🎾 Tennis Smart Training 3D</h2>
+		<p> by Iraqi Maharani, S. Pd </p>
             </div>
             <form id="login-form">
                 <input type="text" id="login-username" placeholder="Email atau Username" required>
