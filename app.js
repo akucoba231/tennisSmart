@@ -2,6 +2,62 @@
    TENNIS SMART TRAINING 3D - APP LOGIC
    ========================================================================== */
 
+// --- LOADER HELPER ---
+function showLoader() {
+    const loader = document.getElementById('app-loader');
+    if (loader) loader.style.display = 'flex';
+}
+
+function hideLoader() {
+    const loader = document.getElementById('app-loader');
+    if (loader) loader.style.display = 'none';
+}
+
+// --- TOAST HELPER ---
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('app-toast');
+    if (!toast) return;
+    toast.textContent = message;
+    
+    toast.className = 'toast-container toast-show';
+    /* if (type === 'error') {
+        toast.classList.add('toast-error');
+    } else {
+        toast.classList.add('toast-success');
+    }*/
+
+    setTimeout(() => {
+        toast.className = toast.className.replace('toast-show', '').trim();
+    }, 3000);
+}
+
+// --- API HELPER ---
+const API_URL = 'https://smarttenis.pjokserver.my.id/api';
+
+async function fetchAPI(endpoint, method = 'GET', body = null) {
+    showLoader();
+    try {
+        const options = {
+            method,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        if (body) {
+            options.body = JSON.stringify(body);
+        }
+        const response = await fetch(`${API_URL}/${endpoint}`, options);
+        if (!response.ok) {
+            console.error(`API Error on ${endpoint}:`, await response.text());
+            return [];
+        }
+        return await response.json();
+    } catch (e) {
+        console.error(`Network Error on ${endpoint}:`, e);
+        return [];
+    } finally {
+        hideLoader();
+    }
+}
+
 // --- STATE APLIKASI ---
 let currentRole = null; // 'atlet' atau 'pelatih'
 let chartMingguan = null; // Menyimpan instance Chart.js
@@ -50,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 }
 
-function navigateTo(viewId) {
+async function navigateTo(viewId) {
     // Sembunyikan semua view
     document.querySelectorAll('.view-section').forEach(section => {
         section.classList.remove('active');
@@ -68,23 +124,23 @@ function navigateTo(viewId) {
             header.style.display = 'flex';
 
         // Render data spesifik saat halaman dibuka
-        if (viewId === 'view-athlete-home') renderAthleteHome();
-        if (viewId === 'view-coach-home') renderCoachHome();
-        if (viewId === 'view-training') renderTrainingList();
-        if (viewId === 'view-assessment') renderAssessmentForm();
-        //if (viewId === 'view-progress') renderAthleteProgress(); // <--- TAMBAHKAN BARIS INI
+        if (viewId === 'view-athlete-home') await renderAthleteHome();
+        if (viewId === 'view-coach-home') await renderCoachHome();
+        if (viewId === 'view-training') await renderTrainingList();
+        if (viewId === 'view-assessment') await renderAssessmentForm();
+        //if (viewId === 'view-progress') await renderAthleteProgress(); // <--- TAMBAHKAN BARIS INI
         // Di dalam navigateTo(viewId)
         if (viewId === 'view-progress') {
-            const session = JSON.parse(localStorage.getItem('app_session'));
+            const session = JSON.parse(sessionStorage.getItem('app_session'));
             keatas();
             if (session && session.role === 'atlet') {
-                renderProgressDetail(session.id_user, false); // Atlet langsung ke rinciannya sendiri
+                await renderProgressDetail(session.id_user, false); // Atlet langsung ke rinciannya sendiri
             } else if (session && session.role === 'pelatih') {
-                renderCoachProgressList(); // Pelatih masuk ke daftar list dulu
+                await renderCoachProgressList(); // Pelatih masuk ke daftar list dulu
             }
         }
-        if (viewId === 'view-account') renderAccountForm();
-        if (viewId === 'view-evaluation') renderEvaluation();
+        if (viewId === 'view-account') await renderAccountForm();
+        if (viewId === 'view-evaluation') await renderEvaluation();
         
         // TAMBAHKAN BARIS INI:
         if (viewId === 'view-material-3d') renderMaterial3D();
@@ -93,45 +149,42 @@ function navigateTo(viewId) {
     }
 }
 
-function renderEvaluation() {
+async function renderEvaluation() {
     const btnSubmit = document.getElementById('btn-submit-eval');
     const cancelEval = document.getElementById('cancelEval');
-    renderEval();
+    await renderEval();
 
     cancelEval.onclick = () => {
         tutupEvalForm();
     }
     
-    btnSubmit.onclick = () => {
-        const session = JSON.parse(localStorage.getItem('app_session'));
+    btnSubmit.onclick = async () => {
+        const session = JSON.parse(sessionStorage.getItem('app_session'));
         if (!session) {
-            alert('⚠️ Anda harus login untuk mengisi evaluasi.');
+            showToast('⚠️ Anda harus login untuk mengisi evaluasi.', 'error');
             return;
         }
 
         // Ambil nilai dari form
         const evalData = {
-            id_eval: 'EVAL-' + Date.now(),
+            id_evaluasi: 'EVAL-' + Date.now(),
             user_id: session.id_user,
-            tanggal: new Date().toISOString(),
+            tanggal: dayjs().format('YYYY-MM-DD HH:mm:ss'),
             latihan_mudah: document.getElementById('eval-mudah').value,
             teknik_stabil: document.getElementById('eval-stabil').value,
-            keluhan_nyeri: document.getElementById('eval-nyeri').value
+            keluhan_nyeri: document.getElementById('eval-nyeri').value,
+            catatan_pelatih: ""
         };
 
-        // Ambil data lama, push data baru, simpan kembali
-        const evaluasiDB = JSON.parse(localStorage.getItem('tb_evaluasi_mingguan')) || [];
-        evaluasiDB.push(evalData);
-        localStorage.setItem('tb_evaluasi_mingguan', JSON.stringify(evaluasiDB));
+        await fetchAPI('tb_evaluasi_mingguan', 'POST', evalData);
 
         // Berikan notifikasi sukses
-        alert('✅ Evaluasi mingguan berhasil dikirim! Terima kasih atas feedback Anda.');
+        showToast('✅ Evaluasi mingguan berhasil dikirim! Terima kasih atas feedback Anda.', 'success');
         
         // Tutup form
-        //document.getElementById('eval-form').reset();
         tutupEvalForm();
 
-        renderEval();
+        await renderEval();
 
         
         // Opsional: Alihkan ke beranda setelah submit
@@ -150,11 +203,11 @@ function bukaEvalForm(){
     evalForm.style.display = "block";
 }
 
-function renderEval(){
+async function renderEval(){
     let evalRender = document.getElementById('evalRender');
 
-    const session = JSON.parse(localStorage.getItem('app_session'));
-    let dataEvaluasi = JSON.parse(localStorage.getItem('tb_evaluasi_mingguan')) || [];
+    const session = JSON.parse(sessionStorage.getItem('app_session'));
+    let dataEvaluasi = await fetchAPI('tb_evaluasi_mingguan') || [];
     dataEvaluasi = dataEvaluasi.filter((item) => item.user_id === session.id_user);
 
     let body = ``;
@@ -181,11 +234,11 @@ function renderEval(){
 // ==========================================================================
 
 // --- FUNGSI 1: TAMPILKAN TABEL DAFTAR ATLET UNTUK PELATIH ---
-function renderCoachProgressList() {
+async function renderCoachProgressList() {
     document.getElementById('progress-list-container').style.display = 'block';
     document.getElementById('progress-detail-container').style.display = 'none';
 
-    const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+    const usersDB = await fetchAPI('tb_users') || [];
     const daftarAtlet = usersDB.filter(u => u.role === 'atlet');
     const tbody = document.getElementById('tbody-progress-list');
     tbody.innerHTML = '';
@@ -236,9 +289,9 @@ function renderCoachProgressList() {
 let chartProgressLine = null;
 let chartProgressRadar = null;
 
-function renderProgressDetail(targetUserId, isCoachView) {
-    const session = JSON.parse(localStorage.getItem('app_session'));
-    const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+async function renderProgressDetail(targetUserId, isCoachView) {
+    const session = JSON.parse(sessionStorage.getItem('app_session'));
+    const usersDB = await fetchAPI('tb_users') || [];
     const atletData = usersDB.find(u => u.id_user === targetUserId);
 
     if(!atletData) return;
@@ -273,10 +326,10 @@ function renderProgressDetail(targetUserId, isCoachView) {
     }
 
     // 3. Tarik & Susun Data Riwayat Tabel
-    const riwayatLatihan = JSON.parse(localStorage.getItem('tb_riwayat_latihan')) || [];
-    const riwayatAssessment = JSON.parse(localStorage.getItem('tb_riwayat_assessment')) || [];
-    const dataLatihan = JSON.parse(localStorage.getItem('tb_master_latihan')) || [];
-    const dataAssessment = JSON.parse(localStorage.getItem('tb_master_assessment')) || [];
+    const riwayatLatihan = await fetchAPI('tb_riwayat_latihan') || [];
+    const riwayatAssessment = await fetchAPI('tb_riwayat_assessment') || [];
+    const dataLatihan = await fetchAPI('tb_master_latihan') || [];
+    const dataAssessment = await fetchAPI('tb_master_assessment') || [];
     
     let semuaRiwayat = [];
 
@@ -299,7 +352,11 @@ function renderProgressDetail(targetUserId, isCoachView) {
         const assInfo = dataAssessment.find(a => a.id_assessment === r.id_assessment);
         let skorStrArr = [];
         if(r.hasil_metrik) {
-            for(const [namaMetrik, hasil] of Object.entries(r.hasil_metrik)) {
+            let parsedMetrik = r.hasil_metrik;
+            if (typeof parsedMetrik === 'string') {
+                try { parsedMetrik = JSON.parse(parsedMetrik); } catch(e){}
+            }
+            for(const [namaMetrik, hasil] of Object.entries(parsedMetrik)) {
                 skorStrArr.push(`${namaMetrik}: ${hasil.skor_1_10}`);
             }
         }
@@ -370,7 +427,7 @@ function renderProgressDetail(targetUserId, isCoachView) {
     });
 
     // 5. Render Grafik (Memanggil fungsi yang sudah dilengkapi di bawah)
-    renderProgressCharts(targetUserId, isCoachView);
+    await renderProgressCharts(targetUserId, isCoachView);
 
     // 6. CUSTOM EXPORT EXCEL
     document.getElementById('btn-export-athlete').onclick = () => {
@@ -397,21 +454,22 @@ function renderProgressDetail(targetUserId, isCoachView) {
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Riwayat Progress");
-        XLSX.writeFile(wb, `Capaian_Atlet_${atletData.nama.replace(/\s+/g, '_')}.xlsx`);
+        const timestamp = dayjs().format('YYYYMMDD_HHmmss');
+        XLSX.writeFile(wb, `Capaian_Atlet_${atletData.nama.replace(/\s+/g, '_')}_${timestamp}.xlsx`);
     };
 }
 
 // Fungsi asisten untuk merender ulang chart Line (dan Radar jika pelatih) di halaman detail ini
 // Fungsi asisten untuk merender ulang chart Line & Radar di halaman rincian progress
-function renderProgressCharts(targetUserId, isCoachView) {
+async function renderProgressCharts(targetUserId, isCoachView) {
     const ctxLine = document.getElementById('chart-athlete-progress');
     const ctxRadar = document.getElementById('chart-progress-radar');
     
     if(chartProgressLine) chartProgressLine.destroy();
     if(chartProgressRadar) chartProgressRadar.destroy();
 
-    const riwayat = JSON.parse(localStorage.getItem('tb_riwayat_assessment')) || [];
-    const masterAss = JSON.parse(localStorage.getItem('tb_master_assessment')) || [];
+    const riwayat = await fetchAPI('tb_riwayat_assessment') || [];
+    const masterAss = await fetchAPI('tb_master_assessment') || [];
     const riwayatTarget = targetUserId ? riwayat.filter(r => r.user_id === targetUserId) : [];
 
     // Jika kosong, render chart melompong
@@ -438,7 +496,8 @@ function renderProgressCharts(targetUserId, isCoachView) {
             
             if (tesKategoriIni.length > 0) {
                 tesKategoriIni.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
-                const m = tesKategoriIni[0].hasil_metrik || {};
+                let m = tesKategoriIni[0].hasil_metrik || {};
+                if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e){} }
                 const sAkurasi = m["Akurasi"] ? m["Akurasi"].skor_1_10 : 0;
                 const sKonsistensi = m["Konsistensi"] ? m["Konsistensi"].skor_1_10 : 0;
                 radarData.push((sAkurasi + sKonsistensi) / 2);
@@ -485,7 +544,8 @@ function renderProgressCharts(targetUserId, isCoachView) {
                 if (rekamJejak.length > 0) {
                     let totalGabungan = 0;
                     rekamJejak.forEach(rec => {
-                        const m = rec.hasil_metrik || {};
+                        let m = rec.hasil_metrik || {};
+                        if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e){} }
                         const sAkurasi = m["Akurasi"] ? m["Akurasi"].skor_1_10 : 0;
                         const sKonsistensi = m["Konsistensi"] ? m["Konsistensi"].skor_1_10 : 0;
                         totalGabungan += (sAkurasi + sKonsistensi) / 2;
@@ -538,13 +598,13 @@ function renderProgressCharts(targetUserId, isCoachView) {
     // ==========================================================================
     // ALUR LOGIKA OTENTIKASI LOGIN (SINKRON DATA TB_USERS)
     // ==========================================================================
-    formLogin.addEventListener('submit', (e) => {
+    formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
         const userIn = document.getElementById('login-username').value.trim();
         const passIn = document.getElementById('login-password').value;
         
-        // Ambil data database lokal pengguna keseluruhan
-        const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+        // Ambil data database lokal pengguna keseluruhan dari API
+        const usersDB = await fetchAPI('tb_users') || [];
         
         // Cari akun berdasarkan Username ATAU Email yang cocok dengan Password
         const userDitemukan = usersDB.find(u => 
@@ -556,7 +616,7 @@ function renderProgressCharts(targetUserId, isCoachView) {
             
             // Simpan informasi user aktif ke session memori
             
-            localStorage.setItem('app_session', JSON.stringify({
+            sessionStorage.setItem('app_session', JSON.stringify({
             
                 id_user: userDitemukan.id_user,
                 role: userDitemukan.role,
@@ -566,22 +626,22 @@ function renderProgressCharts(targetUserId, isCoachView) {
 
             if (userDitemukan.role === 'atlet') {
                 // Konfigurasi visual dashboard atlet, gunakan ID sesi dinamis
-                //localStorage.setItem('akunAtlet', JSON.stringify(userDitemukan)); 
                 navigateTo('view-athlete-home');
                 setupAthleteMenu();
             } else if (userDitemukan.role === 'pelatih') {
                 navigateTo('view-coach-home');
                 setupCoachMenu();
             }
+            showToast('✅ Login Berhasil!', 'success');
         } else {
-            alert('⚠️ Login Gagal! Username/Email atau Password Anda salah.');
+            showToast('⚠️ Login Gagal! Username/Email atau Password Anda salah.', 'error');
         }
     });
 
     // Ubah fungsi tombol bypass pelatih lama agar memberikan edukasi login terpadu
     if(btnCoachLoginBypass) {
         btnCoachLoginBypass.onclick = () => {
-            alert("ℹ️ Akses langsung pelatih dinonaktifkan. Silakan login menggunakan akun pelatih resmi:\n\nUsername: coach_budi\nPassword: admin\n\nAtau buat akun pelatih baru melalui menu daftar.");
+            showToast("ℹ️ Akses langsung pelatih dinonaktifkan. Silakan login menggunakan akun pelatih resmi:\n\nUsername: coach_budi\nPassword: admin\n\nAtau buat akun pelatih baru melalui menu daftar.", "error");
         };
     }
 
@@ -617,16 +677,16 @@ function renderProgressCharts(targetUserId, isCoachView) {
     });
 
     // PROSES SUBMIT REGISTRASI ATLET
-    formRegAtlet.addEventListener('submit', (e) => {
+    formRegAtlet.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+        const usersDB = await fetchAPI('tb_users') || [];
         
         const username = document.getElementById('reg-atl-username').value.trim();
         const email = document.getElementById('reg-atl-email').value.trim();
 
         // Validasi Duplikasi Akun
         if (usersDB.some(u => u.username === username || u.email === email)) {
-            alert("⚠️ Gagal! Username atau Email sudah terdaftar di sistem.");
+            showToast("⚠️ Gagal! Username atau Email sudah terdaftar di sistem.", 'error');
             return;
         }
 
@@ -642,27 +702,26 @@ function renderProgressCharts(targetUserId, isCoachView) {
             lamaLatihan_bulan: 0,
             level: "Beginner 1", // Level default awal
             kelemahanUtama: "Belum Diidentifikasi",
-            waktu_pendaftaran: new Date().toISOString() // Universal Timestamp
+            waktu_pendaftaran: dayjs().format('YYYY-MM-DD HH:mm:ss') // Format SQL Timestamp
         };
 
-        usersDB.push(newUser);
-        localStorage.setItem('tb_users', JSON.stringify(usersDB));
-        alert("🎉 Registrasi Atlet Berhasil! Silakan masuk menggunakan akun baru Anda.");
+        await fetchAPI('tb_users', 'POST', newUser);
+        showToast("🎉 Registrasi Atlet Berhasil! Silakan masuk menggunakan akun baru Anda.", 'success');
         formRegAtlet.reset();
         modalReg.style.display = 'none';
         keatas();
     });
 
     // PROSES SUBMIT REGISTRASI PELATIH
-    formRegPelatih.addEventListener('submit', (e) => {
+    formRegPelatih.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+        const usersDB = await fetchAPI('tb_users') || [];
         
         const username = document.getElementById('reg-plt-username').value.trim();
         const email = document.getElementById('reg-plt-email').value.trim();
 
         if (usersDB.some(u => u.username === username || u.email === email)) {
-            alert("⚠️ Gagal! Username atau Email pelatih sudah terdaftar.");
+            showToast("⚠️ Gagal! Username atau Email pelatih sudah terdaftar.", 'error');
             return;
         }
 
@@ -673,13 +732,13 @@ function renderProgressCharts(targetUserId, isCoachView) {
             email: email,
             password: document.getElementById('reg-plt-password').value,
             nama: document.getElementById('reg-plt-nama').value,
+            usia: null, tinggi_cm: null, lamaLatihan_bulan: null, level: null, kelemahanUtama: null, // Default
             spesialisasi: document.getElementById('reg-plt-spesialisasi').value,
-            waktu_pendaftaran: new Date().toISOString()
+            waktu_pendaftaran: dayjs().format('YYYY-MM-DD HH:mm:ss')
         };
 
-        usersDB.push(newUser);
-        localStorage.setItem('tb_users', JSON.stringify(usersDB));
-        alert("🎉 Registrasi Pelatih Berhasil! Silakan gunakan akun Anda untuk masuk.");
+        await fetchAPI('tb_users', 'POST', newUser);
+        showToast("🎉 Registrasi Pelatih Berhasil! Silakan gunakan akun Anda untuk masuk.", 'success');
 
         formRegPelatih.reset();
         modalReg.style.display = 'none';
@@ -692,7 +751,7 @@ function renderProgressCharts(targetUserId, isCoachView) {
     btnLogout.addEventListener('click', (e) => {
         e.preventDefault();
         currentRole = null;
-        localStorage.setItem('app_session', JSON.stringify(null));
+        sessionStorage.setItem('app_session', JSON.stringify(null));
         
         document.getElementById('login-username').value = '';
         document.getElementById('login-password').value = '';
@@ -703,11 +762,11 @@ function renderProgressCharts(targetUserId, isCoachView) {
     btnForgot.addEventListener('click', () => {
         const rootPass = prompt('Masukkan password master reset sistem:');
         if (rootPass === 'root') {
-            localStorage.clear();
-            alert('Sistem berhasil dibersihkan total ke kondisi default awal.');
-            window.location.reload();
+            sessionStorage.clear();
+            showToast('Sesi berhasil dibersihkan.', 'success');
+            setTimeout(() => window.location.reload(), 1500);
         } else if (rootPass !== null) {
-            alert('Sandi salah!');
+            showToast('Sandi salah!', 'error');
         }
     });
 }
@@ -739,19 +798,19 @@ function setupCoachMenu() {
    3. FITUR ATLET (HOME, LATIHAN, ASSESMENT)
    ========================================================================== */
   // --- FUNGSI BERANDA ATLET ---
-  function renderAthleteHome() {
-    const session = JSON.parse(localStorage.getItem('app_session'));
+  async function renderAthleteHome() {
+    const session = JSON.parse(sessionStorage.getItem('app_session'));
     if (!session) return;
 
     // Ambil data user spesifik dari tb_users
-    const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+    const usersDB = await fetchAPI('tb_users') || [];
     const akun = usersDB.find(u => u.id_user === session.id_user);
 
     document.getElementById('welcome-name').textContent = `Selamat datang, ${akun.nama}!`;
     document.getElementById('welcome-level').textContent = akun.level;
     
-    const riwayatLatihan = JSON.parse(localStorage.getItem('tb_riwayat_latihan')) || [];
-    const dataLatihan = JSON.parse(localStorage.getItem('tb_master_latihan')) || [];
+    const riwayatLatihan = await fetchAPI('tb_riwayat_latihan') || [];
+    const dataLatihan = await fetchAPI('tb_master_latihan') || [];
     const hariIni = dayjs().format('YYYY-MM-DD');
 
     // Filter latihan hari ini HANYA untuk atlet yang sedang login
@@ -773,20 +832,20 @@ function setupCoachMenu() {
 
     // GANTI BARIS INI:
     // renderChart('chart-athlete-home', 'Progress Teknik Mingguan');
-    renderAthleteHomeChart(); // Memanggil fungsi grafik baru yang spesifik
+    await renderAthleteHomeChart(); // Memanggil fungsi grafik baru yang spesifik
 
 }
 
 // --- FUNGSI GRAFIK BERANDA ATLET (5 GARIS) ---
-function renderAthleteHomeChart() {
+async function renderAthleteHomeChart() {
     const ctxElem = document.getElementById('chart-athlete-home');
     if(!ctxElem) return;
 
     if(chartMingguan) chartMingguan.destroy();
 
-    const session = JSON.parse(localStorage.getItem('app_session'));
-    const riwayat = JSON.parse(localStorage.getItem('tb_riwayat_assessment')) || [];
-    const masterAss = JSON.parse(localStorage.getItem('tb_master_assessment')) || [];
+    const session = JSON.parse(sessionStorage.getItem('app_session'));
+    const riwayat = await fetchAPI('tb_riwayat_assessment') || [];
+    const masterAss = await fetchAPI('tb_master_assessment') || [];
     
     // Tarik hanya data asesmen milik atlet ini
     const riwayatTarget = riwayat.filter(r => r.user_id === session.id_user);
@@ -819,7 +878,8 @@ function renderAthleteHomeChart() {
             if (rekamJejak.length > 0) {
                 let totalGabungan = 0;
                 rekamJejak.forEach(rec => {
-                    const m = rec.hasil_metrik || {};
+                    let m = rec.hasil_metrik || {};
+                    if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e){} }
                     const sAkurasi = m["Akurasi"] ? m["Akurasi"].skor_1_10 : 0;
                     const sKonsistensi = m["Konsistensi"] ? m["Konsistensi"].skor_1_10 : 0;
                     totalGabungan += (sAkurasi + sKonsistensi) / 2;
@@ -853,14 +913,14 @@ function renderAthleteHomeChart() {
 }
 
 // --- FUNGSI RIWAYAT & PROGRESS ATLET ---
-function renderAthleteProgress() {
-    const session = JSON.parse(localStorage.getItem('app_session'));
+async function renderAthleteProgress() {
+    const session = JSON.parse(sessionStorage.getItem('app_session'));
     if (!session) return;
 
-    const riwayatLatihan = JSON.parse(localStorage.getItem('tb_riwayat_latihan')) || [];
-    const riwayatAssessment = JSON.parse(localStorage.getItem('tb_riwayat_assessment')) || [];
-    const dataLatihan = JSON.parse(localStorage.getItem('tb_master_latihan')) || [];
-    const dataAssessment = JSON.parse(localStorage.getItem('tb_master_assessment')) || [];
+    const riwayatLatihan = await fetchAPI('tb_riwayat_latihan') || [];
+    const riwayatAssessment = await fetchAPI('tb_riwayat_assessment') || [];
+    const dataLatihan = await fetchAPI('tb_master_latihan') || [];
+    const dataAssessment = await fetchAPI('tb_master_assessment') || [];
 
     const tbody = document.getElementById('tbody-athlete-history');
     tbody.innerHTML = '';
@@ -885,8 +945,10 @@ function renderAthleteProgress() {
         
         // Ekstrak struktur hasil_metrik baru (Nilai Aktual & Skor 1-10)
         let skorStrArr = [];
-        for(const [namaMetrik, hasil] of Object.entries(r.hasil_metrik)) {
-            skorStrArr.push(`${namaMetrik}: ${hasil.nilai_aktual} (Skor: ${hasil.skor_1_10})`);
+        let parsedMetrik = r.hasil_metrik || {};
+        if (typeof parsedMetrik === 'string') { try { parsedMetrik = JSON.parse(parsedMetrik); } catch(e){} }
+        for(const [namaMetrik, hasil] of Object.entries(parsedMetrik)) {
+            skorStrArr.push(`${namaMetrik}: ${hasil.skor_1_10}`); // Note: DB format removed nilai_aktual earlier
         }
         const skorStr = skorStrArr.join('<br>');
         
@@ -920,11 +982,11 @@ function renderAthleteProgress() {
         });
     }
 
-    renderChart('chart-athlete-progress', 'Grafik Perkembangan Keseluruhan');
+    await renderChart('chart-athlete-progress', 'Grafik Perkembangan Keseluruhan');
 }
 // --- FUNGSI DAFTAR LATIHAN ---
-function renderTrainingList() {
-    const dataLatihan = JSON.parse(localStorage.getItem('tb_master_latihan')) || [];
+async function renderTrainingList() {
+    const dataLatihan = await fetchAPI('tb_master_latihan') || [];
     const container = document.getElementById('training-checklist-container');
     container.innerHTML = ''; 
     
@@ -938,30 +1000,36 @@ function renderTrainingList() {
     });
 
     const btnFinish = document.getElementById('btn-finish-training');
-    btnFinish.onclick = () => {
-        const session = JSON.parse(localStorage.getItem('app_session'));
-        const riwayat = JSON.parse(localStorage.getItem('tb_riwayat_latihan')) || [];
-        const waktuSekarang = new Date().toISOString(); 
+    btnFinish.onclick = async () => {
+        const session = JSON.parse(sessionStorage.getItem('app_session'));
         
         let checkedCount = 0;
+        const promises = [];
         document.querySelectorAll('.check-latihan:checked').forEach(cb => {
-            riwayat.push({ 
+            const newRiwayat = { 
                 id_riwayat_lat: 'RLAT-' + Date.now() + Math.floor(Math.random()*100), 
                 user_id: session.id_user,
-                tanggal: waktuSekarang, 
+                tanggal: dayjs().format('YYYY-MM-DD HH:mm:ss'), 
                 id_latihan: cb.value, 
                 status_selesai: true,
                 catatan_pelatih: ""
-            });
+            };
+            promises.push(fetchAPI('tb_riwayat_latihan', 'POST', newRiwayat));
             checkedCount++;
         });
 
         if(checkedCount > 0) {
-            localStorage.setItem('tb_riwayat_latihan', JSON.stringify(riwayat));
-            alert('Latihan hari ini berhasil disimpan! ✅');
-            navigateTo('view-progress'); 
+            await Promise.all(promises);
+            
+            // Reset form Latihan dengan uncheck semua kotak
+            document.querySelectorAll('.check-latihan:checked').forEach(cb => cb.checked = false);
+
+            showToast('Latihan hari ini berhasil disimpan! ✅', 'success');
+            if (session.role === 'atlet') {
+                navigateTo('view-progress'); 
+            }
         } else {
-            alert('⚠️ Centang minimal 1 latihan yang diselesaikan.');
+            showToast('⚠️ Centang minimal 1 latihan yang diselesaikan.', 'error');
         }
     };
 }
@@ -972,10 +1040,10 @@ let selectedAthleteId = null;
 let selectedAssessmentId = null;
 let selectedAssessmentName = "";
 
-function renderAssessmentForm() {
+async function renderAssessmentForm() {
     // 1. Ambil data master pengguna global
-    const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
-    const riwayatDB = JSON.parse(localStorage.getItem('tb_riwayat_assessment')) || [];
+    const usersDB = await fetchAPI('tb_users') || [];
+    const riwayatDB = await fetchAPI('tb_riwayat_assessment') || [];
     
     // Filter khusus user yang berperan sebagai atlet
     const daftarAtlet = usersDB.filter(u => u.role === 'atlet');
@@ -1087,20 +1155,17 @@ function setupAssessmentModalActions() {
 
     // SUBMIT FORM DATA INDIKATOR (AKURASI & KONSISTENSI)
     const formNilaiReal = document.getElementById('form-input-nilai-real');
-    formNilaiReal.onsubmit = (e) => {
+    formNilaiReal.onsubmit = async (e) => {
         e.preventDefault();
         
-        const riwayatDB = JSON.parse(localStorage.getItem('tb_riwayat_assessment')) || [];
-
-        // ... (di dalam event submit asesmen)
-        const session = JSON.parse(localStorage.getItem('app_session')); // Ambil sesi pelatih
+        const session = JSON.parse(sessionStorage.getItem('app_session')); // Ambil sesi pelatih
         
         const newRecord = {
             id_riwayat_ass: 'RASS-' + Date.now() + Math.floor(Math.random() * 100),
             user_id: selectedAthleteId,
             id_pelatih: session.id_user,       // <--- TAMBAHAN VALIDASI
             nama_pelatih: session.nama,        // <--- TAMBAHAN VALIDASI
-            tanggal: new Date().toISOString(),
+            tanggal: dayjs().format('YYYY-MM-DD HH:mm:ss'),
             id_assessment: selectedAssessmentId,
             // ... (lanjutan hasil_metrik dan catatan_pelatih seperti sebelumnya)
 
@@ -1117,13 +1182,12 @@ function setupAssessmentModalActions() {
             catatan_pelatih: document.getElementById('ass-input-catatan').value.trim()
         };
 
-        riwayatDB.push(newRecord);
-        localStorage.setItem('tb_riwayat_assessment', JSON.stringify(riwayatDB));
+        await fetchAPI('tb_riwayat_assessment', 'POST', newRecord);
 
         // Tutup Modal Proses 1, Pindah buka Modal Evaluasi Status 2
         modal1.style.display = 'none';
         
-        const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+        const usersDB = await fetchAPI('tb_users') || [];
         const atletActive = usersDB.find(u => u.id_user === selectedAthleteId);
 
         if(atletActive) {
@@ -1135,20 +1199,19 @@ function setupAssessmentModalActions() {
     };
 
     // SIMPAN AKHIR MODAL EVALUASI (UPDATE LEVEL & KEKURANGAN UTAMA DI TB_USERS)
-    document.getElementById('btn-submit-final-evaluation').onclick = () => {
-        const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
-        const atletIndex = usersDB.findIndex(u => u.id_user === selectedAthleteId);
+    document.getElementById('btn-submit-final-evaluation').onclick = async () => {
+        const usersDB = await fetchAPI('tb_users') || [];
+        const atletActive = usersDB.find(u => u.id_user === selectedAthleteId);
 
-        if (atletIndex !== -1) {
-            // Update langsung data master atlet di database lokal
-            usersDB[atletIndex].level = document.getElementById('eval-status-level').value;
-            usersDB[atletIndex].kelemahanUtama = document.getElementById('eval-status-kekurangan').value.trim() || 'Tidak Ada';
+        if (atletActive) {
+            atletActive.level = document.getElementById('eval-status-level').value;
+            atletActive.kelemahanUtama = document.getElementById('eval-status-kekurangan').value.trim() || 'Tidak Ada';
 
-            localStorage.setItem('tb_users', JSON.stringify(usersDB));
-            alert('🎉 Sukses! Evaluasi berkala serta status profil kemajuan atlet berhasil diperbarui.');
+            await fetchAPI(`tb_users/${atletActive.id_user}`, 'PUT', atletActive);
+            showToast('🎉 Sukses! Evaluasi berkala serta status profil kemajuan atlet berhasil diperbarui.', 'success');
             
             modal2.style.display = 'none';
-            renderAssessmentForm(); // Refresh isi tabel utama agar status terbarunya langsung muncul
+            await renderAssessmentForm(); // Refresh isi tabel utama agar status terbarunya langsung muncul
         }
     };
 }
@@ -1159,9 +1222,9 @@ function setupAssessmentModalActions() {
 /* ==========================================================================
    FITUR PELATIH (DASHBOARD MULTIUSER & GRAFIK)
    ========================================================================== */
-   function renderCoachHome() {
+   async function renderCoachHome() {
     // 1. Ambil seluruh data pengguna dari tabel multiuser
-    const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+    const usersDB = await fetchAPI('tb_users') || [];
     
     // 2. Filter hanya akun yang berstatus 'atlet'
     const daftarAtlet = usersDB.filter(u => u.role === 'atlet');
@@ -1190,16 +1253,16 @@ function setupAssessmentModalActions() {
 
     // 4. Render data default (Atlet urutan pertama) saat halaman dimuat
     renderAtletInfo(daftarAtlet[0]);
-    renderCoachChart(daftarAtlet[0].id_user); 
+    await renderCoachChart(daftarAtlet[0].id_user); 
 
     // 5. Event listener saat Pelatih mengganti pilihan atlet di dropdown
-    selectAtlet.onchange = (e) => {
+    selectAtlet.onchange = async (e) => {
         const selectedId = e.target.value;
         const selectedAtlet = daftarAtlet.find(a => a.id_user === selectedId);
         
         if (selectedAtlet) {
             renderAtletInfo(selectedAtlet);     
-            renderCoachChart(selectedId);       
+            await renderCoachChart(selectedId);       
         }
     };
 }
@@ -1220,7 +1283,7 @@ function renderAtletInfo(atlet) {
 // Fungsi khusus membuat grafik berdasarkan riwayat assesment atlet yang dipilih
 // --- FUNGSI KHUSUS GRAFIK PELATIH (5 GARIS INDIKATOR) ---
 // --- FUNGSI KHUSUS GRAFIK PELATIH (LINE & RADAR) ---
-function renderCoachChart(targetUserId) {
+async function renderCoachChart(targetUserId) {
     const ctxLine = document.getElementById('chart-coach-atlet-progress');
     const ctxRadar = document.getElementById('chart-coach-radar');
     
@@ -1230,8 +1293,8 @@ function renderCoachChart(targetUserId) {
 
     if(!ctxLine || !ctxRadar) return;
 
-    const riwayat = JSON.parse(localStorage.getItem('tb_riwayat_assessment')) || [];
-    const masterAss = JSON.parse(localStorage.getItem('tb_master_assessment')) || [];
+    const riwayat = await fetchAPI('tb_riwayat_assessment') || [];
+    const masterAss = await fetchAPI('tb_master_assessment') || [];
     
     // Filter riwayat HANYA milik atlet yang dipilih
     const riwayatTarget = targetUserId ? riwayat.filter(r => r.user_id === targetUserId) : [];
@@ -1266,7 +1329,8 @@ function renderCoachChart(targetUserId) {
             const tesTerbaru = tesKategoriIni[0];
             
             // Ekstrak skor
-            const m = tesTerbaru.hasil_metrik || {};
+            let m = tesTerbaru.hasil_metrik || {};
+            if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e){} }
             const skorAkurasi = m["Akurasi"] ? m["Akurasi"].skor_1_10 : 0;
             const skorKonsistensi = m["Konsistensi"] ? m["Konsistensi"].skor_1_10 : 0;
             
@@ -1323,7 +1387,8 @@ function renderCoachChart(targetUserId) {
             if (rekamJejak.length > 0) {
                 let totalGabungan = 0;
                 rekamJejak.forEach(rec => {
-                    const m = rec.hasil_metrik || {};
+                    let m = rec.hasil_metrik || {};
+                    if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e){} }
                     const sAkurasi = m["Akurasi"] ? m["Akurasi"].skor_1_10 : 0;
                     const sKonsistensi = m["Konsistensi"] ? m["Konsistensi"].skor_1_10 : 0;
                     totalGabungan += (sAkurasi + sKonsistensi) / 2;
@@ -1364,14 +1429,14 @@ function renderCoachChart(targetUserId) {
    
    // --- FUNGSI MENGAMBIL DATA AKTUAL UNTUK GRAFIK ---
 
-   function renderChart(canvasId, title) {
+   async function renderChart(canvasId, title) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     
     // Hancurkan chart lama jika ada agar tidak tumpang tindih
     if(chartMingguan) chartMingguan.destroy();
 
     // 1. Ambil data aktual dari database lokal
-    const realData = getChartDataFromAssessment();
+    const realData = await getChartDataFromAssessment();
 
     // 2. Render chart dengan data tersebut
     chartMingguan = new Chart(ctx, {
@@ -1400,9 +1465,9 @@ function renderCoachChart(targetUserId) {
 }
 
 // --- FUNGSI PENGAMBIL DATA CHART ---
-function getChartDataFromAssessment() {
-    const session = JSON.parse(localStorage.getItem('app_session'));
-    const riwayat = JSON.parse(localStorage.getItem('tb_riwayat_assessment')) || [];
+async function getChartDataFromAssessment() {
+    const session = JSON.parse(sessionStorage.getItem('app_session'));
+    const riwayat = await fetchAPI('tb_riwayat_assessment') || [];
     
     // Filter HANYA data milik user yang sedang aktif
     const riwayatUser = riwayat.filter(r => r.user_id === session.id_user);
@@ -1416,8 +1481,10 @@ function getChartDataFromAssessment() {
         const tgl = dayjs(r.tanggal).format('DD MMM');
         if (!groupedData[tgl]) groupedData[tgl] = [];
         
+        let parsedMetrik = r.hasil_metrik || {};
+        if (typeof parsedMetrik === 'string') { try { parsedMetrik = JSON.parse(parsedMetrik); } catch(e){} }
         // Ambil nilai properti skor_1_10 dari objek bersarang
-        const nilaiSkor = Object.values(r.hasil_metrik).map(m => m.skor_1_10);
+        const nilaiSkor = Object.values(parsedMetrik).map(m => m.skor_1_10);
         const rataRata = nilaiSkor.reduce((a, b) => a + b, 0) / nilaiSkor.length;
         
         groupedData[tgl].push(rataRata);
@@ -1435,9 +1502,9 @@ function getChartDataFromAssessment() {
 
 // --- FUNGSI PENGATURAN AKUN ---
 // --- FUNGSI PENGATURAN AKUN (MULTI-ROLE) ---
-function renderAccountForm() {
-    const session = JSON.parse(localStorage.getItem('app_session'));
-    const usersDB = JSON.parse(localStorage.getItem('tb_users')) || [];
+async function renderAccountForm() {
+    const session = JSON.parse(sessionStorage.getItem('app_session'));
+    const usersDB = await fetchAPI('tb_users') || [];
     
     // Cari index user aktif di database
     const userIndex = usersDB.findIndex(u => u.id_user === session.id_user);
@@ -1468,7 +1535,7 @@ function renderAccountForm() {
 
         // Handle Simpan Atlet
         const btnSave = document.getElementById('btn-save-account');
-        btnSave.onclick = () => {
+        btnSave.onclick = async () => {
             akun.nama = document.getElementById('acc-nama').value;
             akun.username = document.getElementById('acc-username').value;
             akun.password = document.getElementById('acc-password').value;
@@ -1478,7 +1545,7 @@ function renderAccountForm() {
             akun.level = document.getElementById('acc-level').value;
             akun.kelemahanUtama = document.getElementById('acc-kelemahan').value;
 
-            updateUserData(usersDB, userIndex, akun, session);
+            await updateUserData(usersDB, userIndex, akun, session);
             keatas();
             navigateTo('view-athlete-home');
         };
@@ -1499,14 +1566,14 @@ function renderAccountForm() {
 
         // Handle Simpan Pelatih
         const btnSavePlt = document.getElementById('btn-save-account-plt');
-        btnSavePlt.onclick = () => {
+        btnSavePlt.onclick = async () => {
             akun.nama = document.getElementById('acc-plt-nama').value;
             akun.email = document.getElementById('acc-plt-email').value;
             akun.username = document.getElementById('acc-plt-username').value;
             akun.password = document.getElementById('acc-plt-password').value;
             akun.spesialisasi = document.getElementById('acc-plt-spesialisasi').value;
 
-            updateUserData(usersDB, userIndex, akun, session);
+            await updateUserData(usersDB, userIndex, akun, session);
             // Tambahkan kode ini untuk mengalihkan ke beranda pelatih
             navigateTo('view-coach-home');
         };
@@ -1514,16 +1581,15 @@ function renderAccountForm() {
 }
 
 // Fungsi Helper untuk melakukan penyimpanan data (Mencegah pengulangan kode)
-function updateUserData(usersDB, userIndex, updatedAkun, session) {
-    // 1. Simpan ke tabel master
-    usersDB[userIndex] = updatedAkun;
-    localStorage.setItem('tb_users', JSON.stringify(usersDB));
+async function updateUserData(usersDB, userIndex, updatedAkun, session) {
+    // 1. Simpan ke backend
+    await fetchAPI(`tb_users/${updatedAkun.id_user}`, 'PUT', updatedAkun);
     
     // 2. Update data session jika nama diubah
     session.nama = updatedAkun.nama;
-    localStorage.setItem('app_session', JSON.stringify(session));
+    sessionStorage.setItem('app_session', JSON.stringify(session));
 
-    alert('✅ Profil berhasil diperbarui!');
+    showToast('✅ Profil berhasil diperbarui!', 'success');
     
     // 3. Update nama di Beranda jika elemen sapaan tersedia di layar
     if(document.getElementById('welcome-name')) {
