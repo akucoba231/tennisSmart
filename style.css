@@ -376,6 +376,27 @@ tr:nth-child(even) { background-color: #FAFAFA; }
 .close-button:hover { color: var(--danger); }
 
 /* Tab Menu Styles */
+.toast-container {
+    visibility: visible;
+    width: 300px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 8px;
+    padding: 16px;
+    position: fixed;
+    z-index: 10000;
+    left: 50%;
+    bottom: 30px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    opacity: 1;
+    transition: opacity 0.3s, bottom 0.3s, visibility 0.3s;
+    white-space: wrap;
+    transform: translateX(-50%);
+    display: none;
+}
 .modal-tabs {
     display: table;
     width: 100%;
@@ -481,4 +502,37 @@ tr:nth-child(even) { background-color: #FAFAFA; }
 .eval-content table tbody tr td {
     background-color: #fff;
     text-align: center;
+}
+
+/* LOADER OVERLAY */
+.loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.85);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(3px);
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(30, 86, 160, 0.2);
+    border-top: 5px solid var(--primary-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.toast-show {
+   display: block; 
 }
