@@ -32,7 +32,7 @@ function showToast(message, type = 'success') {
 }
 
 // --- API HELPER ---
-const API_URL = 'http://localhost:8080/api';
+const API_URL = 'https://smarttenis.pjokserver.my.id/api';
 
 async function fetchAPI(endpoint, method = 'GET', body = null) {
     showLoader();
