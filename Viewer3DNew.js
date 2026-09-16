@@ -6,7 +6,7 @@ class Viewer3D {
         this.scene.background = new THREE.Color(0x2C3E50);
 
         this.camera = new THREE.PerspectiveCamera(45, this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 100);
-        this.camera.position.set(0, 2, 5);
+        this.camera.position.set(0, 1.5, 3.5);
 
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
         this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
@@ -21,7 +21,7 @@ class Viewer3D {
 
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
-        this.controls.target.set(0, 1, 0);
+        this.controls.target.set(0, 1.5, 0);
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         this.scene.add(ambientLight);
@@ -32,9 +32,9 @@ class Viewer3D {
         // ==========================================
         // DEBUGGING HELPER: GARIS BANTU
         // ==========================================
-        // GridHelper (Lantai kotak-kotak) - DIKOMENTARI AGAR HILANG
-        // const gridHelper = new THREE.GridHelper(10, 10, 0xffffff, 0x555555);
-        // this.scene.add(gridHelper);
+        // GridHelper (Lantai kotak-kotak) - DIAKTIFKAN KEMBALI SEBAGAI REFERENSI
+        const gridHelper = new THREE.GridHelper(10, 10, 0xffffff, 0x555555);
+        this.scene.add(gridHelper);
         
         // AxesHelper (Garis X=Merah, Y=Hijau, Z=Biru) untuk melihat titik pusat (0,0,0)
         // const axesHelper = new THREE.AxesHelper(3);
@@ -58,8 +58,8 @@ class Viewer3D {
         // ==========================================
         const dracoLoader = new THREE.DRACOLoader();
         // Draco butuh file 'decoder' (WebAssembly) untuk membaca kompresi. 
-        // Kita gunakan CDN dari jsdelivr agar Anda tidak perlu repot mendownload file decoder-nya.
-        dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
+        // File decoder telah diunduh ke folder lokal agar bisa berjalan secara offline.
+        dracoLoader.setDecoderPath('assets/draco/');
 
         const loader = new THREE.GLTFLoader();
         // Pasang Draco ke dalam GLTF Loader
@@ -71,20 +71,20 @@ class Viewer3D {
             (gltf) => {
                 console.log(`[DEBUG-3D] ✅ File berhasil dimuat!`, gltf);
                 
-                if(this.model) this.scene.remove(this.model);
-                this.model = gltf.scene;
+                // === HAPUS MODEL LAMA ===
+                if (this.model) {
+                    this.scene.remove(this.model);
+                }
 
-                // ==========================================
-                // REVISI: HILANGKAN EFEK CERMIN PADA MATERIAL
-                // ==========================================
-                this.model.traverse((child) => {
-                    if (child.isMesh && child.material) {
-                        child.material.metalness = 0.0; // Hilangkan efek gelap memantul
-                        child.material.roughness = 0.8; // Permukaan sedikit doff
-                        child.material.needsUpdate = true;
-                    }
-                });
-                // ==========================================
+                // === HENTIKAN MIXER LAMA (PERBAIKAN GLITCH / MEMORY LEAK) ===
+                if (this.mixer) {
+                    this.mixer.stopAllAction();
+                    this.mixer.uncacheRoot(this.mixer.getRoot());
+                    this.mixer = null;
+                    this.animationAction = null;
+                }
+
+                this.model = gltf.scene;
 
                 // Pastikan matriks diperbarui sebelum kalkulasi
                 this.model.updateMatrixWorld(true);
@@ -96,7 +96,7 @@ class Viewer3D {
                 var size = box.getSize(new THREE.Vector3());
                 
                 var maxDim = Math.max(size.x, size.y, size.z);
-                var targetSize = 10.0;  // <--- REVISI: Diubah dari 3.0 menjadi 10.0
+                var targetSize = 15.0;  // <--- DIBESARKAN KE 15.0 AGAR LAPANGAN & AKTOR LEBIH BESAR
                 if (maxDim > 0) {
                     var scaleFactor = targetSize / maxDim;
                     this.model.scale.set(scaleFactor, scaleFactor, scaleFactor);
@@ -120,11 +120,38 @@ class Viewer3D {
                 var heightOffset = -box.min.y;
                 this.model.position.y += heightOffset;
                 
-                // ---> TAMBAHKAN KOREKSI MANUAL ANDA DI SINI <---
-                this.model.position.y -= 1.5; // Geser turun 1.5 poin
+                // ---> KOREKSI MANUAL DIHAPUS KARENA MEMBUAT AMBLAS <---
+                // this.model.position.y -= 1.5; 
 
                 // Tambahkan model ke dalam scene
                 this.scene.add(this.model);
+                this.model.updateMatrixWorld(true);
+
+                // ==========================================
+                // FITUR BARU: FOKUS OTOMATIS KE AKTOR
+                // ==========================================
+                let actorHips = null;
+                this.model.traverse((node) => {
+                    if (node.isBone && (node.name === "mixamorig_Hips" || node.name === "mixamorig9_Hips" || node.name.includes("Hips"))) {
+                        actorHips = node;
+                    }
+                });
+
+                if (actorHips) {
+                    let hipsPos = new THREE.Vector3();
+                    actorHips.getWorldPosition(hipsPos);
+                    
+                    // Fokuskan target tepat ke pinggul/badan aktor
+                    this.controls.target.copy(hipsPos);
+                    console.log("[DEBUG-3D] Kamera berhasil dikunci ke posisi aktor:", hipsPos);
+                } else {
+                    // Fallback jika tidak ada aktor (fokus ke tengah lapangan)
+                    this.controls.target.set(0, 1.5, 0);
+                }
+
+                // === TERAPKAN SETTINGAN KAMERA TERBAIK ===
+                // Tinggi: 1.6, Sudut: 0 (Lurus Depan), Zoom Jarak: 5
+                this.aturKamera(1.6, 0, 5);
 
                 // ==========================================
                 // 3. PLAY ANIMATION
@@ -188,8 +215,13 @@ class Viewer3D {
     }
 
     resetCamera() {
-        this.camera.position.set(0, 2, 5);
-        this.controls.target.set(0, 1, 0);
+        if (this.defaultCameraPos && this.defaultTargetPos) {
+            this.camera.position.copy(this.defaultCameraPos);
+            this.controls.target.copy(this.defaultTargetPos);
+        } else {
+            this.camera.position.set(0, 1.5, 3.5);
+            this.controls.target.set(0, 1.5, 0);
+        }
         this.controls.update();
     }
 
@@ -201,33 +233,74 @@ class Viewer3D {
     }
 
     // ==========================================
-    // HELPER UNTUK DEBUGGING VIA CONSOLE
+    // HELPER UNTUK DEBUGGING KAMERA & POSISI VIA CONSOLE
     // ==========================================
     
-    // Mengatur posisi Y ke angka spesifik (misal: 0, -1.5, 2)
+    // 1. Mengatur Ketinggian Kamera (Y)
+    setKetinggianKamera(nilaiY) {
+        this.camera.position.y = nilaiY;
+        this.controls.update();
+        console.log(`[DEBUG] Ketinggian kamera diset ke: ${nilaiY}`);
+    }
+
+    // 2. Mengatur Sudut Kamera (Menggeser rotasi memutari aktor)
+    // sudutDerajat: 0 = depan lurus, 90 = kanan, -90 = kiri, 180 = belakang
+    setSudutKamera(sudutDerajat) {
+        // Hitung jarak datar (X dan Z) saat ini
+        const dx = this.camera.position.x - this.controls.target.x;
+        const dz = this.camera.position.z - this.controls.target.z;
+        const jarakDatar = Math.sqrt(dx * dx + dz * dz);
+        
+        // Konversi derajat ke radian
+        const radian = sudutDerajat * (Math.PI / 180);
+        
+        this.camera.position.x = this.controls.target.x + (jarakDatar * Math.sin(radian));
+        this.camera.position.z = this.controls.target.z + (jarakDatar * Math.cos(radian));
+        
+        this.controls.update();
+        console.log(`[DEBUG] Sudut kamera diset ke: ${sudutDerajat} derajat (Kanan/Kiri)`);
+    }
+
+    // 3. Mengatur Zoom (Jarak dari target)
+    setZoomKamera(jarakZoom) {
+        // Geser posisi Z agar mendekat/menjauh
+        this.camera.position.z = this.controls.target.z + jarakZoom;
+        this.controls.update();
+        console.log(`[DEBUG] Zoom kamera diset ke jarak: ${jarakZoom}`);
+    }
+
+    // 4. Fungsi gabungan untuk mengatur ketiganya sekaligus dan menyimpannya sebagai Reset
+    aturKamera(tinggiY, sudutDerajat, jarakZoom) {
+        this.setZoomKamera(jarakZoom);
+        this.setKetinggianKamera(tinggiY);
+        this.setSudutKamera(sudutDerajat);
+        
+        // Simpan sebagai default baru agar tombol Reset menggunakan eksperimen ini
+        this.defaultCameraPos = this.camera.position.clone();
+        this.defaultTargetPos = this.controls.target.clone();
+        
+        console.log(`[DEBUG] ✅ Pengaturan kamera berhasil diterapkan dan disimpan sebagai Default (Reset)!`);
+    }
+
+    // (Fungsi lawas untuk mengatur posisi Model)
     setY(nilaiY) {
         if (this.model) {
             this.model.position.y = nilaiY;
             console.log(`[DEBUG] Posisi Y model sekarang diset ke: ${this.model.position.y}`);
-        } else {
-            console.warn("[DEBUG] Model belum dimuat!");
         }
     }
-
-    // Menggeser posisi Y sedikit demi sedikit dari posisi saat ini (misal: naik 0.1 atau turun -0.1)
+    
     geserY(nilaiOffset) {
         if (this.model) {
             this.model.position.y += nilaiOffset;
             console.log(`[DEBUG] Posisi Y digeser. Nilai Y sekarang: ${this.model.position.y}`);
-        } else {
-            console.warn("[DEBUG] Model belum dimuat!");
         }
     }
     
-    // Melihat posisi Y saat ini
     cekPosisi() {
         if (this.model) {
             console.log(`[DEBUG] Koordinat Model -> X: ${this.model.position.x}, Y: ${this.model.position.y}, Z: ${this.model.position.z}`);
+            console.log(`[DEBUG] Koordinat Kamera -> X: ${this.camera.position.x.toFixed(2)}, Y: ${this.camera.position.y.toFixed(2)}, Z: ${this.camera.position.z.toFixed(2)}`);
         }
     }
 }
