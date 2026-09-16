@@ -14,7 +14,7 @@ let materi_json = [
       "Siap bergerak ke segala arah."
     ]
   },
-  {
+ /* {
     "id": "MAT-02",
     "judul": "Footwork (Gerakan Kaki)",
     "model3D": "footwork-compressed.glb",
@@ -28,7 +28,7 @@ let materi_json = [
       "Tempatkan tubuh pada posisi ideal sebelum memukul bola.",
       "Setelah memukul, segera kembali ke posisi siap."
     ]
-  },
+  },*/
   {
     "id": "MAT-03",
     "judul": "Forehand",
