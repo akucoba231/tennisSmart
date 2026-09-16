@@ -69,17 +69,90 @@ let scene3D, camera3D, renderer3D; // Instance Three.js
 let materi3DViewer = null;
 
 // --- INISIALISASI SAAT HALAMAN DIMUAT ---
-// --- INISIALISASI SAAT HALAMAN DIMUAT ---
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     initNavigation();
     initAuth();
-    //initThreeJSBoilerplate();
+    
+    // 0. Daftarkan Service Worker
+    if ('serviceWorker' in navigator) {
+        try {
+            await navigator.serviceWorker.register('sw.js');
+            console.log('[ServiceWorker] Registrasi berhasil.');
+        } catch (err) {
+            console.warn('[ServiceWorker] Registrasi gagal:', err);
+        }
+    }
 
-    // TAMBAHKAN PENGECEKAN SESI DI SINI
+    // 1. Tampilkan dan jalankan Preloader
+    await runPreloader();
+
+    // 2. Lanjutkan ke pengecekan sesi (akan masuk ke Login atau Dashboard)
     checkExistingSession();
 });
 
-// FUNGSI BARU UNTUK MENGECEK SESI
+// FUNGSI BARU UNTUK PRELOADING ASET 3D
+async function runPreloader() {
+    const overlay = document.getElementById('preload-overlay');
+    const bar = document.getElementById('preload-progress-bar');
+    const text = document.getElementById('preload-text');
+
+    if (!overlay) return;
+    
+    // Tampilkan layar loading
+    overlay.style.display = 'flex';
+
+    // Ambil daftar file 3D dari dataMateri.js
+    const pathFolder = "assets/models/";
+    const filesToLoad = materi_json.map(m => pathFolder + m.model3D);
+    const totalFiles = filesToLoad.length;
+    let loadedFiles = 0;
+
+    // Fungsi fetch tunggal dengan timeout (Fail-Safe)
+    const fetchWithTimeout = (url, timeout = 20000) => {
+        return Promise.race([
+            fetch(url, { cache: "force-cache" }), // Meminta browser menyimpan ke cache
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
+        ]);
+    };
+
+    // Waktu tunggu batas atas keseluruhan (Fail-Safe 2)
+    let isBypassed = false;
+    const masterTimeout = setTimeout(() => {
+        isBypassed = true;
+        console.warn("[PRELOADER] Waktu habis (30 detik). Mem-bypass preloader.");
+        overlay.style.display = 'none';
+    }, 30000);
+
+    // Iterasi loading
+    for (const url of filesToLoad) {
+        if (isBypassed) break;
+        try {
+            const response = await fetchWithTimeout(url);
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            // Mengambil blob agar dipastikan terunduh 100% ke cache
+            await response.blob(); 
+        } catch (error) {
+            console.error(`[PRELOADER] Gagal memuat ${url} (Abaikan - Soft Fail):`, error);
+        } finally {
+            if (!isBypassed) {
+                loadedFiles++;
+                const percentage = Math.round((loadedFiles / totalFiles) * 100);
+                bar.style.width = percentage + '%';
+                text.textContent = `Memuat Aset 3D... ${percentage}% (${loadedFiles} / ${totalFiles})`;
+            }
+        }
+    }
+
+    // Pembersihan jika selesai normal
+    if (!isBypassed) {
+        clearTimeout(masterTimeout);
+        // Beri jeda sedikit agar 100% terlihat
+        await new Promise(resolve => setTimeout(resolve, 500));
+        overlay.style.display = 'none';
+    }
+}
+
+// FUNGSI UNTUK MENGECEK SESI
 function checkExistingSession() {
     const savedSession = JSON.parse(sessionStorage.getItem('app_session'));
     
