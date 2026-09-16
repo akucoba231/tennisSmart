@@ -12,7 +12,19 @@
 </head>
 <body>
 
-    <!-- LOADER OVERLAY -->
+    <!-- PRELOADER 3D OVERLAY -->
+    <div id="preload-overlay" class="loader-overlay" style="display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; background-color: #f4f7f6; position: fixed; top: 0; left: 0; width: 100%; height: 100%;">
+        <div style="text-align: center; width: 80%; max-width: 300px;">
+            <div class="spinner" style="margin: 0 auto 20px auto; border-top-color: #2ecc71;"></div>
+            <h3 style="color: var(--primary-blue); margin-bottom: 10px;">Menyiapkan Materi 3D</h3>
+            <div style="width: 100%; background-color: #e0e0e0; border-radius: 10px; overflow: hidden; height: 15px; margin-bottom: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);">
+                <div id="preload-progress-bar" style="width: 0%; height: 100%; background-color: #2ecc71; transition: width 0.3s ease;"></div>
+            </div>
+            <p id="preload-text" style="color: #666; font-weight: bold; margin: 0; font-size: 0.9rem;">Memulai unduhan...</p>
+        </div>
+    </div>
+
+    <!-- LOADER OVERLAY (Standar) -->
     <div id="app-loader" class="loader-overlay" style="display: none;">
         <div style="text-align: center;">
             <div class="spinner" style="margin: 0 auto 15px auto;"></div>
