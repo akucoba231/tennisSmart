@@ -12,9 +12,9 @@ let materi_json = [
       "Pegang raket di depan badan dengan kedua tangan.",
       "Pandangan fokus ke arah bola dan lawan.",
       "Siap bergerak ke segala arah."
-    ]
+    ],
   },
- /* {
+  /* {
     "id": "MAT-02",
     "judul": "Footwork (Gerakan Kaki)",
     "model3D": "footwork-compressed.glb",
@@ -28,7 +28,7 @@ let materi_json = [
       "Tempatkan tubuh pada posisi ideal sebelum memukul bola.",
       "Setelah memukul, segera kembali ke posisi siap."
     ]
-  },*/
+  }, */
   {
     "id": "MAT-03",
     "judul": "Forehand",
@@ -110,3 +110,15 @@ let materi_json = [
     ]
   }
 ]
+
+materi_json.forEach((item, index) => {
+  materi_json[index]['animasi'] = index;
+})
+
+/*
+let linkAnimasi = document.getElementById('link-animasi');
+
+function linkTo(animasi){
+  linkAnimasi.href = `./fullView/fbx_viewer.html?${animasi}`;
+}
+*/
