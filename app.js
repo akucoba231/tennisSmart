@@ -92,33 +92,39 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function runPreloader() {
     const overlay = document.getElementById('preload-overlay');
-    if (overlay) overlay.style.display = 'none'; // Langsung sembunyikan
-    
-    // Bypass (Preloader dinonaktifkan karena 3D dimuat on-demand via iFrame)
-    console.log("[PRELOADER] Bypass aktif. 3D Viewer ditangani oleh fbx_viewer.html");
-    return;
+    const bar = document.getElementById('preload-progress-bar');
+    const text = document.getElementById('preload-text');
 
-    // Ambil daftar file 3D dari dataMateri.js
-    const pathFolder = "assets/models/";
-    const filesToLoad = materi_json.map(m => pathFolder + m.model3D);
+    if (!overlay) return;
+    
+    // Tampilkan layar loading
+    overlay.style.display = 'flex';
+
+    // Daftar aset model 3D utama dari folder fullView
+    const filesToLoad = [
+        "./fullView/karakter_atlet.glb",
+        "./fullView/raket_tenis.glb",
+        "./fullView/Tennis_mixamo.fbx",
+        "./fullView/karakter_atlet2.glb"
+    ];
     const totalFiles = filesToLoad.length;
     let loadedFiles = 0;
 
-    // Fungsi fetch tunggal dengan timeout (Fail-Safe)
-    const fetchWithTimeout = (url, timeout = 20000) => {
+    // Fungsi fetch tunggal dengan timeout (Fail-Safe) - ditingkatkan menjadi 60 detik per file
+    const fetchWithTimeout = (url, timeout = 60000) => {
         return Promise.race([
             fetch(url, { cache: "force-cache" }), // Meminta browser menyimpan ke cache
             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
         ]);
     };
 
-    // Waktu tunggu batas atas keseluruhan (Fail-Safe 2)
+    // Waktu tunggu batas atas keseluruhan (Fail-Safe 2) - ditingkatkan menjadi 120 detik
     let isBypassed = false;
     const masterTimeout = setTimeout(() => {
         isBypassed = true;
-        console.warn("[PRELOADER] Waktu habis (30 detik). Mem-bypass preloader.");
+        console.warn("[PRELOADER] Waktu habis (120 detik). Mem-bypass preloader.");
         overlay.style.display = 'none';
-    }, 30000);
+    }, 120000);
 
     // Iterasi loading
     for (const url of filesToLoad) {
