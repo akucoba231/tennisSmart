@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>3D GLB Viewer - Three.js</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Fonts: Plus Jakarta Sans for modern clean typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Three.js Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Main 3D Canvas Container -->
+  <div id="canvas-container">
+    <canvas id="webgl-canvas"></canvas>
+  </div>
+
+  <!-- Top Navigation / Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-title">3D Viewer</h1>
+        <span id="active-model-name" class="brand-subtitle">karakter_atlet2.glb</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="fbx_viewer.html" class="icon-btn" title="Buka FBX MoCap Viewer" aria-label="Buka FBX MoCap Viewer" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">
+        <span style="font-size:0.85rem; font-weight:700;">FBX</span>
+      </a>
+      <button id="btn-fullscreen" class="icon-btn" title="Layar Penuh" aria-label="Toggle Fullscreen">
+        <svg class="icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        </svg>
+        <svg class="icon-compress" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        </svg>
+      </button>
+      <button id="btn-toggle-info" class="icon-btn" title="Informasi Model" aria-label="Toggle Model Info">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      </button>
+      <button id="btn-toggle-debug" class="icon-btn" title="Panel Debug Skeleton" aria-label="Toggle Debug Panel">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Info Modal / Floating Card -->
+  <div id="info-modal" class="glass-card info-card hidden">
+    <div class="card-header">
+      <h3>Informasi Model</h3>
+      <button id="btn-close-info" class="close-btn">&times;</button>
+    </div>
+    <div class="card-body">
+      <div class="info-row"><span>Nama File:</span> <strong id="info-filename">-</strong></div>
+      <div class="info-row"><span>Jumlah Mesh:</span> <strong id="info-meshes">0</strong></div>
+      <div class="info-row"><span>Jumlah Poligon:</span> <strong id="info-triangles">0</strong></div>
+      <div class="info-row"><span>Jumlah Animasi:</span> <strong id="info-animations">0</strong></div>
+      <div class="info-row"><span>Dimensi Model:</span> <strong id="info-size">-</strong></div>
+    </div>
+  </div>
+
+  <!-- Debug HUD / Floating Diagnostic Card -->
+  <div id="debug-modal" class="glass-card debug-card hidden">
+    <div class="card-header">
+      <div class="debug-title-wrap">
+        <span class="debug-dot"></span>
+        <h3>Diagnostik Skeleton & Animasi</h3>
+      </div>
+      <button id="btn-close-debug" class="close-btn">&times;</button>
+    </div>
+    <div class="card-body">
+      <div class="info-row"><span>Klip Aktif:</span> <strong id="debug-clip-name">-</strong></div>
+      <div class="info-row"><span>Status:</span> <strong id="debug-status">Diam</strong></div>
+      <div class="info-row"><span>Jumlah Track:</span> <strong id="debug-tracks-count">0</strong></div>
+      <div class="info-row"><span>Binding Status:</span> <strong id="debug-binding-status">Mengecek...</strong></div>
+      
+      <div class="debug-controls-section">
+        <label class="debug-toggle-label">
+          <input type="checkbox" id="check-skeleton-helper">
+          <span>Tampilkan Garis Tulang (SkeletonHelper)</span>
+        </label>
+      </div>
+
+      <div class="debug-log-box">
+        <div class="debug-log-header">Log Riwayat:</div>
+        <div id="debug-log-content" class="debug-log-content">Menunggu aksi...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Screen Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loader-content">
+      <div class="spinner-ring"></div>
+      <h2 id="loading-title">Memuat Model 3D...</h2>
+      <p id="loading-detail" class="loading-detail">Menyiapkan berkas dan tekstur</p>
+      <div class="progress-bar-container">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+      <div id="progress-text" class="progress-text">0%</div>
+    </div>
+  </div>
+
+  <!-- Drag & Drop Overlay Indicator -->
+  <div id="dropzone-overlay" class="dropzone-overlay hidden">
+    <div class="dropzone-content">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+      <p>Lepaskan file .GLB / .GLTF di sini</p>
+    </div>
+  </div>
+
+  <!-- Toast Notification / Alert -->
+  <div id="toast" class="toast hidden">
+    <div class="toast-content">
+      <span id="toast-message">Pesan notifikasi</span>
+      <button id="toast-close" class="toast-close">&times;</button>
+    </div>
+  </div>
+
+  <!-- CORS Warning Modal for direct file:// access -->
+  <div id="cors-modal" class="modal-backdrop hidden">
+    <div class="glass-card modal-card">
+      <div class="modal-icon-warning">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <h3>Pemberitahuan Keamanan Browser (CORS)</h3>
+      <p>Browser memblokir pemuatan file otomatis melalui tautan <code>file://</code> demi keamanan.</p>
+      <div class="cors-solutions">
+        <div class="solution-item">
+          <strong>Solusi 1 (Paling Mudah):</strong>
+          <p>Buka langsung file GLB dari folder proyek menggunakan tombol di bawah:</p>
+          <button id="btn-cors-pick-file" class="btn btn-primary">Pilih File Model (.GLB)</button>
+        </div>
+        <div class="solution-item">
+          <strong>Solusi 2:</strong>
+          <p>Jalankan <code>start_server.bat</code> di folder proyek ini untuk mengaktifkan web server lokal.</p>
+        </div>
+      </div>
+      <button id="btn-close-cors" class="btn btn-secondary">Tutup</button>
+    </div>
+  </div>
+
+  <!-- Floating Zoom Controller (Right Side, Touch-Friendly) -->
+  <aside class="floating-zoom-bar glass-card" aria-label="Pengaturan Zoom">
+    <button id="btn-zoom-in" class="zoom-btn" title="Perbesar (Zoom In)" aria-label="Zoom In">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+    
+    <div class="zoom-slider-wrap">
+      <input type="range" id="zoom-range" min="30" max="350" value="100" step="1" title="Geser untuk mengatur zoom" aria-label="Zoom Slider">
+    </div>
+
+    <button id="btn-zoom-reset" class="zoom-badge" title="Klik untuk reset zoom ke 100%">
+      <span id="zoom-percent-text">100%</span>
+    </button>
+
+    <button id="btn-zoom-out" class="zoom-btn" title="Perkecil (Zoom Out)" aria-label="Zoom Out">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+  </aside>
+
+  <!-- Floating Mobile Controls / Action Bar -->
+  <nav class="bottom-controls-bar">
+    <!-- Top Row: Quick Model Switcher Pills -->
+    <div class="model-switcher-scroll">
+      <div class="model-switcher">
+        <button class="model-pill active" data-model="karakter_atlet2.glb">
+          <span class="pill-icon">🎾</span> Karakter Atlet 2 (Raket)
+        </button>
+        <button class="model-pill" data-model="karakter_atlet.glb">
+          <span class="pill-icon">🏃</span> Karakter Atlet 1
+        </button>
+        <button class="model-pill" data-model="raket_tenis.glb">
+          <span class="pill-icon">🎾</span> Raket Tenis
+        </button>
+        <button id="btn-custom-file" class="model-pill file-pill">
+          <span class="pill-icon">📁</span> Buka File Lain...
+        </button>
+        <a href="fbx_viewer.html" class="model-pill" style="text-decoration:none;">
+          <span class="pill-icon">🏃</span> Buka FBX MoCap Viewer
+        </a>
+        <!-- Hidden input for file picking -->
+        <input type="file" id="file-input" accept=".glb,.gltf" style="display:none;">
+      </div>
+    </div>
+
+    <!-- Animation Control Panel (Toggled if model has animations) -->
+    <div id="animation-panel" class="animation-panel hidden">
+      <div class="anim-timeline-row">
+        <span id="anim-current-time" class="time-label">00:00.0</span>
+        <div class="timeline-slider-container">
+          <div id="anim-timeline-progress" class="timeline-progress-fill"></div>
+          <input type="range" id="anim-timeline-slider" class="timeline-slider" min="0" max="100" step="0.01" value="0" aria-label="Timeline Animasi">
+        </div>
+        <span id="anim-total-duration" class="time-label">00:00.0</span>
+      </div>
+
+      <div class="anim-controls-row">
+        <button id="btn-play-pause" class="tool-btn anim-play-btn" title="Putar / Jeda Animasi">
+          <svg class="icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+          <svg class="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span id="anim-play-text">Jeda</span>
+        </button>
+
+        <div class="select-wrapper">
+          <select id="anim-clip-select" class="anim-select" title="Pilih Animasi">
+            <option value="">Animasi</option>
+          </select>
+        </div>
+
+        <button id="btn-anim-speed" class="tool-btn speed-btn" title="Kecepatan Putar">
+          <span id="anim-speed-label">1.0x</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Quick Tools Bar -->
+    <div class="tools-bar">
+      <button id="btn-reset-cam" class="tool-btn" title="Reset Posisi Kamera">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+        <span>Reset</span>
+      </button>
+
+      <button id="btn-autorotate" class="tool-btn" title="Putar Otomatis (Turntable)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+          <path d="M2 12h20"></path>
+        </svg>
+        <span>Rotasi</span>
+      </button>
+
+      <button id="btn-wireframe" class="tool-btn" title="Mode Jaring (Wireframe)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="3" y1="15" x2="21" y2="15"></line>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+          <line x1="15" y1="3" x2="15" y2="21"></line>
+        </svg>
+        <span>Wireframe</span>
+      </button>
+
+      <button id="btn-skeleton" class="tool-btn" title="Tampilkan / Sembunyikan Garis Tulang (Skeleton)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M8 5h8M7 10h10M9 15h6M8 20h8"></path>
+        </svg>
+        <span>Skeleton</span>
+      </button>
+
+      <button id="btn-grid" class="tool-btn active" title="Tampilkan / Sembunyikan Grid Lantai">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <line x1="12" y1="2" x2="12" y2="22"></line>
+          <path d="M20 20H4V4h16v16z"></path>
+        </svg>
+        <span>Grid</span>
+      </button>
+
+      <button id="btn-theme" class="tool-btn" title="Ubah Tema Background">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+        </svg>
+        <span>Tema</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Application Script -->
+  <script type="module" src="app.js?v=timeline-v1"></script>
+</body>
+</html>
