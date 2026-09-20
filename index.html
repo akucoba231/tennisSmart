@@ -225,27 +225,14 @@
                 <i class="fas fa-arrow-left"></i> Kembali ke Daftar Materi
             </button>
 
-            <!-- Canvas 3D -->
-            <div id="canvas-container" style="position: relative; width: 100%; height: 50vh; background: #2C3E50; border-radius: 10px; overflow: hidden; margin-top: 15px;">
-
-                <canvas id="canvas-3d" style="width: 100%; height: 100%; display: block;"></canvas>
-
-                <div id="controls-3d" style="position: absolute; bottom: 0; left: 0; transform: scale(0.7); display: flex; gap: 10px; background: rgba(255, 255, 255, 0.85); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10;">
-
-                    <button id="btn-3d-play" style="padding: 8px 15px; border: none; border-radius: 6px; background: #3b82f6; color: white; cursor: pointer; font-size: 1rem;">
-                        <i class="fas fa-pause"></i>
-                    </button>
-
-                    <button id="btn-3d-slow" style="padding: 8px 15px; border: none; border-radius: 6px; background: #64748b; color: white; cursor: pointer; font-size: 0.9rem; font-weight: bold;">
-                        <i class="fas fa-running"></i> Slow
-                    </button>
-
-                    <button id="btn-3d-reset" style="padding: 8px 15px; border: none; border-radius: 6px; background: #ef4444; color: white; cursor: pointer; font-size: 0.9rem; font-weight: bold;">
-                        <i class="fas fa-sync-alt"></i> Reset
-                    </button>
-
-                </div>
+            <!-- Canvas 3D Placeholder -->
+            <div id="canvas-container" style="position: relative; width: 100%; height: 20vh; background: #2C3E50; border-radius: 10px; overflow: hidden; margin-top: 15px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                <i class="fas fa-cube" style="font-size: 3rem; color: #fff; margin-bottom: 10px; opacity: 0.5;"></i>
+                <button id="btn-open-3d-modal" class="btn-primary" style="padding: 10px 20px; font-size: 1.1rem; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <i class="fas fa-play-circle"></i> Lihat 3D Model
+                </button>
             </div>
+
 
             <!-- Detail Langkah -->
             <div class="card" id="materi-detail-container" style="margin-bottom: 15px;">
@@ -558,6 +545,19 @@
 
 
     </main>
+    
+    <!-- Modal iFrame 3D Viewer -->
+    <div id="modal-3d-viewer" class="modal-backdrop" style="display: none; z-index: 10000; background-color: rgba(0, 0, 0, 0.9);">
+        <div style="position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;">
+            <div style="padding: 15px; text-align: right; background: #222;">
+                <button id="btn-close-3d-modal" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer;">
+                    <i class="fas fa-times"></i> Tutup 3D
+                </button>
+            </div>
+            <iframe id="iframe-3d-viewer" src="" style="flex: 1; width: 100%; border: none; background: #2C3E50;"></iframe>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
