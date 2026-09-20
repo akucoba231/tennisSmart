@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tst3d-v2';
+const CACHE_NAME = 'tst3d-v3';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting(); // Langsung aktif tanpa menunggu tab ditutup
@@ -24,14 +24,6 @@ self.addEventListener('fetch', (event) => {
     // Hanya proses permintaan GET (jangan cache POST API)
     if (event.request.method !== 'GET') return;
 
-    // Bypass file 3D berukuran besar agar ditangani oleh Native Disk Cache Browser
-    // Menghindari error "Unexpected error" atau gagal kloning saat ukuran terlalu besar
-    const url = new URL(event.request.url);
-    const bypassExts = ['.glb', '.gltf', '.fbx', '.bin'];
-    if (bypassExts.some(ext => url.pathname.toLowerCase().endsWith(ext))) {
-        return; // Melewati event.respondWith(), browser akan memproses secara default
-    }
-
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             // 1. Jika ada di cache (memori lokal), langsung berikan! (Instan)
@@ -50,8 +42,10 @@ self.addEventListener('fetch', (event) => {
                 const responseToCache = networkResponse.clone();
 
                 caches.open(CACHE_NAME).then((cache) => {
-                    // Masukkan ke dalam cache untuk masa depan
-                    cache.put(event.request, responseToCache);
+                    // Masukkan ke dalam cache untuk masa depan (tangkap error jika file terlalu besar/kuota habis)
+                    cache.put(event.request, responseToCache).catch(err => {
+                        console.warn('[ServiceWorker] Gagal menyimpan ke cache (mungkin ukuran file terlalu besar):', err);
+                    });
                 });
 
                 return networkResponse;
