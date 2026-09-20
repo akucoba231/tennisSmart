@@ -90,16 +90,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     checkExistingSession();
 });
 
-// FUNGSI BARU UNTUK PRELOADING ASET 3D
 async function runPreloader() {
     const overlay = document.getElementById('preload-overlay');
-    const bar = document.getElementById('preload-progress-bar');
-    const text = document.getElementById('preload-text');
-
-    if (!overlay) return;
+    if (overlay) overlay.style.display = 'none'; // Langsung sembunyikan
     
-    // Tampilkan layar loading
-    overlay.style.display = 'flex';
+    // Bypass (Preloader dinonaktifkan karena 3D dimuat on-demand via iFrame)
+    console.log("[PRELOADER] Bypass aktif. 3D Viewer ditangani oleh fbx_viewer.html");
+    return;
 
     // Ambil daftar file 3D dari dataMateri.js
     const pathFolder = "assets/models/";
@@ -1735,17 +1732,17 @@ async function updateUserData(usersDB, userIndex, updatedAkun, session) {
         btn.onclick = () => {
             detailView.style.display = 'none';
             listView.style.display = 'block';
-            if (materi3DViewer) materi3DViewer.stop(); // Hentikan render loop
+            // tidak perlu stop materi3DViewer karena sudah pakai iframe
             
             window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll otomatis ke atas
         };
     });
 
 
-    // Jika viewer belum ada, inisialisasi HANYA SEKALI
-    if (!materi3DViewer) {
-        materi3DViewer = new Viewer3D('canvas-3d');
-        setup3DButtons(); // Pasang event listener tombol kontrol
+    // Jika viewer modal belum disiapkan
+    if (!window.modalViewerReady) {
+        setup3DButtons(); // Pasang event listener tombol penutup modal
+        window.modalViewerReady = true;
     }
 
 
@@ -1784,6 +1781,7 @@ async function updateUserData(usersDB, userIndex, updatedAkun, session) {
             // 2. Isi konten Teks
             document.getElementById('materi-title').textContent = materi.judul;
             document.getElementById('materi-desc').textContent = materi.deskripsi;
+            //linkTo(materi.animasi);
 
             const stepsContainer = document.getElementById('materi-steps');
             stepsContainer.innerHTML = ''; 
@@ -1799,25 +1797,27 @@ async function updateUserData(usersDB, userIndex, updatedAkun, session) {
                 stepsContainer.innerHTML = '<li>Tidak ada detail langkah.</li>';
             }
 
-            // 3. PENTING UNTUK CANVAS 3D:
-            // Elemen <canvas> sering mengalami "glitch" ukuran (gepeng/mengecil) jika dirender 
-            // saat container induknya dalam status 'display: none'.
-            // Karena kita baru mengubah display menjadi 'block', kita berikan trigger resize paksa
-            // agar Three.js menyesuaikan ulang ukuran canvasnya.
-            setTimeout(() => {
-                materi3DViewer.resize();
-            }, 50);
-
-            // 4. Scroll ke atas otomatis
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
             // ========================================================
-            // 5. MUAT MODEL 3D (BAGIAN INI SEBELUMNYA TERLEWAT)
+            // 5. MUAT MODEL 3D KE TOMBOL MODAL
             // ========================================================
-            if (materi.model3D) {
-                // Pastikan path ini sesuai dengan folder tempat Anda menyimpan file GLTF
-                const pathFolder = "assets/models/"; 
-                materi3DViewer.loadModel(pathFolder + materi.model3D);
+            const btnOpenModal = document.getElementById('btn-open-3d-modal');
+            if (btnOpenModal) {
+                // Simpan index animasi pada atribut data
+                btnOpenModal.dataset.animasiIndex = materi.animasi;
+                
+                // Hapus event listener lama agar tidak tertumpuk jika diklik berkali-kali
+                btnOpenModal.onclick = null;
+                btnOpenModal.onclick = () => {
+                    const animIdx = btnOpenModal.dataset.animasiIndex;
+                    const iframe = document.getElementById('iframe-3d-viewer');
+                    const modal = document.getElementById('modal-3d-viewer');
+                    
+                    if (iframe && modal) {
+                        iframe.src = `./fullView/fbx_viewer.html?${animIdx}`;
+                        modal.style.display = 'block';
+                        document.body.style.overflow = 'hidden'; // cegah scroll di belakang modal
+                    }
+                };
             }
         };
 
@@ -1825,38 +1825,20 @@ async function updateUserData(usersDB, userIndex, updatedAkun, session) {
     });
 }
 
-// Fungsi untuk menghubungkan tombol UI dengan logika Modul Viewer3D
+// Fungsi untuk menyiapkan logika penutupan modal 3D
 function setup3DButtons() {
-    const btnPlay = document.getElementById('btn-3d-play');
-    const btnSlow = document.getElementById('btn-3d-slow');
-    const btnReset = document.getElementById('btn-3d-reset');
-    
-    let isSlowMo = false;
-
-    btnPlay.onclick = () => {
-        const isPlaying = materi3DViewer.togglePlayPause();
-        // Ganti ikon FontAwesome
-        btnPlay.innerHTML = isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
-    };
-
-    btnSlow.onclick = () => {
-        isSlowMo = !isSlowMo;
-        materi3DViewer.setSlowMotion(isSlowMo);
-        // Ubah warna/teks tombol sebagai indikator aktif
-        btnSlow.style.backgroundColor = isSlowMo ? '#f44336' : ''; 
-        btnSlow.style.color = isSlowMo ? 'white' : '';
-    };
-
-    btnReset.onclick = () => {
-        materi3DViewer.resetCamera();
-    };
-
-    // Dengarkan event resize layar
-    window.addEventListener('resize', () => {
-        if (document.getElementById('materi-detail-view').style.display === 'block') {
-            materi3DViewer.resize();
-        }
-    });
+    const btnCloseModal = document.getElementById('btn-close-3d-modal');
+    if (btnCloseModal) {
+        btnCloseModal.onclick = () => {
+            const modal = document.getElementById('modal-3d-viewer');
+            const iframe = document.getElementById('iframe-3d-viewer');
+            if (modal && iframe) {
+                modal.style.display = 'none';
+                iframe.src = ""; // Kosongkan URL agar iframe berhenti memproses rendering
+                document.body.style.overflow = 'auto'; // kembalikan scroll
+            }
+        };
+    }
 }
 
 function keatas(){
