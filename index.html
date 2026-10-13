@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Tennis Smart Training 3D</title>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.css">
         
     <link rel="stylesheet" href="style.css">
 </head>
@@ -54,6 +59,7 @@
                 <a href="#" class="nav-link menu-atlet" data-target="view-account">Profil dan Pengaturan</a>
                 
                 <a href="#" class="nav-link menu-pelatih" data-target="view-coach-home">Beranda</a>
+                <a href="#" class="nav-link menu-pelatih" data-target="view-coach-training">Daftar Latihan</a>
                 <a href="#" class="nav-link menu-pelatih" data-target="view-assessment">Assesment</a>
                 <a href="#" class="nav-link menu-pelatih" data-target="view-progress">Progress Asesmen & Latihan Atlet</a>
                 <a href="#" class="nav-link menu-pelatih" data-target="view-account">Profil dan Pengaturan</a>
@@ -201,6 +207,59 @@
 
         <div class="card">
             <button class="nav-link menu-pelatih btn-secondary" style="width: 100%;" data-target="view-progress">Lihat Detail</button>
+        </div>
+    </section>
+
+    <!-- SECTION DAFTAR LATIHAN (KHUSUS PELATIH) -->
+    <section id="view-coach-training" class="view-section">
+        <h2>Daftar Latihan</h2>
+        
+        <div style="margin-bottom: 15px;">
+            <button id="btn-open-modal-add-latihan" class="btn-primary" style="width: auto; padding: 10px 20px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; border-radius: 8px;">
+                <i class="fas fa-plus"></i> Tambah
+            </button>
+        </div>
+
+        <div class="card" style="padding: 15px;">
+            <div style="overflow-x: auto; width: 100%;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 480px;">
+                    <thead>
+                        <tr style="background: #F4F6F8; border-bottom: 2px solid #E1E8ED; text-align: left;">
+                            <th style="padding: 12px 10px; width: 60px; text-align: center;">No</th>
+                            <th style="padding: 12px 10px; width: 180px;">Kategori</th>
+                            <th style="padding: 12px 10px;">Nama</th>
+                            <th style="padding: 12px 10px; width: 110px; text-align: center;">Opsi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-coach-training-list">
+                        <!-- Diisi secara dinamis oleh JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Modal Tambah Latihan -->
+        <div id="modal-add-latihan" class="modal-backdrop" style="display: none;">
+            <div class="modal-content" style="max-width: 420px; margin: 12vh auto; padding: 20px; border-radius: 12px;">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #EEE; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1.15rem; color: var(--primary-blue);"><i class="fas fa-dumbbell"></i> Tambah Program Latihan</h3>
+                    <button id="btn-close-modal-add-latihan" class="close-button">&times;</button>
+                </div>
+                <form id="form-add-latihan">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="input-kategori-latihan" style="font-weight: bold; margin-bottom: 6px; display: block; font-size: 0.9rem;">Kategori Latihan</label>
+                        <input type="text" id="input-kategori-latihan" placeholder="Contoh: Teknik Dasar" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #CCC; font-size: 0.95rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="input-nama-latihan" style="font-weight: bold; margin-bottom: 6px; display: block; font-size: 0.9rem;">Nama Latihan</label>
+                        <input type="text" id="input-nama-latihan" placeholder="Contoh: Forehand Shadow Swing" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #CCC; font-size: 0.95rem;">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" id="btn-cancel-add-latihan" class="btn-secondary" style="background: #888; color: white; padding: 10px 18px; border-radius: 8px; cursor: pointer;">Batal</button>
+                        <button type="submit" id="btn-save-add-latihan" class="btn-primary" style="width: auto; padding: 10px 22px; cursor: pointer; border-radius: 8px;">Simpan</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </section>
 
@@ -359,10 +418,61 @@
 
     <section id="view-training" class="view-section" >
         <h2>Program Latihan</h2>
+        <p class="text-sm" style="color: #666; margin-bottom: 12px;">Centang latihan yang telah Anda selesaikan hari ini:</p>
         <div id="training-checklist-container">
         </div>
+
+        <!-- Kartu Unggah Bukti Foto Latihan -->
+        <div class="card" style="padding: 15px; margin-top: 15px; background: #FAFAFA; border: 1px dashed var(--primary-blue); border-radius: 10px;">
+            <label style="font-weight: bold; color: var(--primary-blue); display: block; margin-bottom: 6px; font-size: 0.95rem;">
+                <i class="fas fa-camera"></i> Bukti Foto Latihan
+            </label>
+            <p class="text-sm" style="color: #666; margin-bottom: 12px; font-size: 0.85rem;">
+                Pilih foto bukti dokumentasi latihan. Foto akan dikompresi secara otomatis agar hemat kuota.
+            </p>
+            
+            <input type="file" id="input-foto-latihan" accept="image/*" style="display: none;">
+            
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button type="button" id="btn-choose-foto-latihan" class="btn-secondary" style="background: var(--primary-blue); color: white; padding: 9px 16px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                    <i class="fas fa-image"></i> Pilih Foto Latihan
+                </button>
+                <span id="foto-latihan-info" style="font-size: 0.85rem; color: #777;">Belum ada foto</span>
+            </div>
+
+            <!-- Preview Box Foto -->
+            <div id="foto-latihan-preview-box" style="display: none; margin-top: 12px;">
+                <div style="position: relative; display: inline-block;">
+                    <img id="img-preview-latihan" src="" alt="Pratinjau Foto" style="max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid #CCC; display: block;">
+                    <button type="button" id="btn-remove-foto-latihan" title="Hapus Foto" style="position: absolute; top: 6px; right: 6px; background: rgba(231, 76, 60, 0.9); color: white; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="foto-latihan-size-badge" style="font-size: 0.8rem; color: var(--secondary-green); font-weight: 600; margin-top: 6px;"></div>
+            </div>
+        </div>
+
         <button id="btn-finish-training" class="btn-primary mt-2">Selesaikan Latihan Hari Ini</button>
     </section>
+
+    <!-- Modal Pratinjau Foto Bukti Latihan -->
+    <div id="modal-view-foto" class="modal-backdrop" style="display: none; z-index: 10001;">
+        <div class="modal-content" style="max-width: 480px; margin: 6vh auto; padding: 15px; text-align: center; border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #EEE; padding-bottom: 8px;">
+                <h4 style="margin: 0; color: var(--primary-blue);"><i class="fas fa-image"></i> Bukti Foto Latihan</h4>
+                <button id="btn-close-view-foto" class="close-button">&times;</button>
+            </div>
+            <div style="position: relative; display: inline-block; width: 100%;">
+                <img id="img-modal-view-target" src="" alt="Foto Bukti" style="max-width: 100%; max-height: 60vh; border-radius: 8px; object-fit: contain; cursor: zoom-in; display: block; margin: 0 auto;" title="Klik untuk memperbesar / zoom">
+            </div>
+            <p id="foto-zoom-hint" style="color: #777; font-size: 0.8rem; margin: 8px 0 10px 0;">
+                <i class="fas fa-search-plus"></i> Ketuk foto untuk Zoom & Fullscreen
+            </p>
+            <button type="button" id="btn-fullscreen-zoom-foto" class="btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; font-weight: 600; padding: 10px 15px;">
+                <i class="fas fa-expand"></i> Buka Layar Penuh (Zoom In/Out)
+            </button>
+        </div>
+    </div>
 
     <section id="view-progress" class="view-section" >
 
@@ -385,7 +495,7 @@
         </div>
 
         <div id="progress-detail-container" style="display: none;">
-            <div class="flex-between" style="margin-bottom: 15px;">
+            <div class="flex-between flex-column" style="margin-bottom: 15px;">
                 <h2 id="progress-detail-title">Progress Anda</h2>
                 <div style="display: flex; gap: 8px;">
                     <button id="btn-back-progress-list" class="btn-secondary" style="background-color: var(--danger); display: none;"><i class="fas fa-arrow-left"></i> Kembali</button>
@@ -573,5 +683,8 @@
     <script src="dataMateri.js"></script>
     <script src="Viewer3DNew.js"></script>
 
-    <script src="database_seeder.js"></script> <script src="app.js"></script> </body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
+    <script src="database_seeder.js"></script>
+    <script src="app.js"></script>
+</body>
     </html>
