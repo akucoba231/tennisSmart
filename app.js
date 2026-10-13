@@ -228,6 +228,7 @@ async function navigateTo(viewId) {
         // Render data spesifik saat halaman dibuka
         if (viewId === 'view-athlete-home') await renderAthleteHome();
         if (viewId === 'view-coach-home') await renderCoachHome();
+        if (viewId === 'view-coach-training') await renderCoachTrainingList();
         if (viewId === 'view-training') await renderTrainingList();
         if (viewId === 'view-assessment') await renderAssessmentForm();
         //if (viewId === 'view-progress') await renderAthleteProgress(); // <--- TAMBAHKAN BARIS INI
@@ -438,13 +439,19 @@ async function renderProgressDetail(targetUserId, isCoachView) {
     // Format Latihan
     riwayatLatihan.filter(r => r.user_id === targetUserId).forEach(r => {
         const latInfo = dataLatihan.find(l => l.id_latihan === r.id_latihan);
+        let statusDisplay = 'Selesai ✅';
+        if (r.foto && r.foto.trim() !== '') {
+            window.riwayatFotoMap = window.riwayatFotoMap || {};
+            window.riwayatFotoMap[r.id_riwayat_lat] = r.foto;
+        }
         semuaRiwayat.push({
             tanggal: r.tanggal,
             jenis: 'Latihan',
+            id: r.id_riwayat_lat,
             nama: latInfo ? latInfo.nama : 'Tidak Dikenal',
             status: 'Selesai ✅',
             status_clean: 'Selesai',
-            nama_pelatih: '-', // Latihan dilakukan sendiri tanpa pelatih
+            catatan_pelatih: '-', // Latihan dilakukan sendiri tanpa pelatih // catatan_pelatih tidak ada
             timestamp: new Date(r.tanggal).getTime()
         });
     });
@@ -466,10 +473,11 @@ async function renderProgressDetail(targetUserId, isCoachView) {
         semuaRiwayat.push({
             tanggal: r.tanggal,
             jenis: 'Assesment',
+            id: r.id_riwayat_ass,
             nama: assInfo ? assInfo.nama : 'Tidak Dikenal',
             status: skorStrArr.join('<br>'), 
             status_clean: skorStrArr.join(', '), 
-            nama_pelatih: r.nama_pelatih || '-', // Tarik nama pelatih, default strip
+            catatan_pelatih: r.catatan_pelatih || '-', // Tarik nama pelatih, default strip
             timestamp: new Date(r.tanggal).getTime()
         });
     });
@@ -492,6 +500,7 @@ async function renderProgressDetail(targetUserId, isCoachView) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Belum ada riwayat aktivitas.</td></tr>';
     } else {
         semuaRiwayat.forEach((item,index) => {
+            //console.log(item);
             const badgeColor = item.jenis === 'Assesment' ? '#1E56A0' : '#4CAF50';
             tbody.innerHTML += `
                 <tr>
@@ -504,7 +513,9 @@ async function renderProgressDetail(targetUserId, isCoachView) {
                         <br><strong>${item.nama}</strong>
                     </td>
                     <td style="font-size: 0.85rem;">${item.status}</td>
-                    <td style="font-size: 0.85rem; text-align: center;">${item.nama_pelatih}</td>
+                    <td style="font-size: 0.85rem; text-align: center;">
+                        ${item.catatan_pelatih === "-" && item.jenis !== 'Assesment' ? `<button class="tombol-lihat" onclick="bukaFoto('${item.id}')">Lihat Foto</button>` : item.catatan_pelatih}
+                    </td>
                 </tr>
             `;
         });
@@ -541,11 +552,11 @@ async function renderProgressDetail(targetUserId, isCoachView) {
         ws_data.push([]);
         
         // Header dengan Kolom Pelatih
-        ws_data.push(["Nomor","Tanggal Waktu", "Kategori Aktivitas", "Detail Kegiatan", "Pencapaian / Nilai", "Pelatih Penilai"]);
+        ws_data.push(["Nomor","Tanggal Waktu", "Kategori Aktivitas", "Detail Kegiatan", "Pencapaian / Nilai" /*, "Pelatih Penilai"*/]);
         
         semuaRiwayat.forEach((item,index) => {
             const tglBersih = dayjs(item.tanggal).format('DD MMM YYYY HH:mm');
-            ws_data.push([(index+1),tglBersih, item.jenis, item.nama, item.status_clean, item.nama_pelatih]);
+            ws_data.push([(index+1),tglBersih, item.jenis, item.nama, item.status_clean /*,item.nama_pelatih*/]);
         });
 
         const ws = XLSX.utils.aoa_to_sheet(ws_data);
@@ -1032,11 +1043,17 @@ async function renderAthleteProgress() {
     // 1. Ambil & Format Data Latihan (Filter by user_id)
     riwayatLatihan.filter(r => r.user_id === session.id_user).forEach(r => {
         const latInfo = dataLatihan.find(l => l.id_latihan === r.id_latihan);
+        let statusDisplay = 'Selesai ✅';
+        if (r.foto && r.foto.trim() !== '') {
+            window.riwayatFotoMap = window.riwayatFotoMap || {};
+            window.riwayatFotoMap[r.id_riwayat_lat] = r.foto;
+            statusDisplay += `<br><button type="button" class="btn-text" style="color:var(--primary-blue); font-size:0.8rem; padding:2px 0; text-align:left; cursor:pointer;" onclick="openFotoBuktiModalById('${r.id_riwayat_lat}')"><i class="fas fa-image"></i> Lihat Foto</button>`;
+        }
         semuaRiwayat.push({
             tanggal: r.tanggal,
             jenis: 'Latihan',
             nama: latInfo ? latInfo.nama : 'Tidak Dikenal',
-            status: 'Selesai ✅',
+            status: statusDisplay,
             timestamp: new Date(r.tanggal).getTime()
         });
     });
@@ -1086,6 +1103,216 @@ async function renderAthleteProgress() {
 
     await renderChart('chart-athlete-progress', 'Grafik Perkembangan Keseluruhan');
 }
+// ==========================================================================
+// MANAJEMEN DAFTAR LATIHAN (KHUSUS PELATIH)
+// ==========================================================================
+async function renderCoachTrainingList() {
+    const tbody = document.getElementById('tbody-coach-training-list');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:15px; color:#666;">Memuat data...</td></tr>';
+    
+    const dataLatihan = await fetchAPI('tb_master_latihan') || [];
+    tbody.innerHTML = '';
+
+    if (dataLatihan.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#888;">Belum ada program latihan. Klik tombol "+ Tambah" di atas untuk menambahkan.</td></tr>';
+    } else {
+        dataLatihan.forEach((lat, index) => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #EAEAEA';
+            tr.innerHTML = `
+                <td style="padding:10px; text-align:center; font-weight:bold;">${index + 1}</td>
+                <td style="padding:10px;"><span class="badge" style="background:#E8EEF2; color:var(--primary-blue); font-weight:600; padding:4px 8px; border-radius:4px;">${lat.kategori}</span></td>
+                <td style="padding:10px; font-weight:500;">${lat.nama}</td>
+                <td style="padding:10px; text-align:center;">
+                    <button class="btn-delete-latihan" data-id="${lat.id_latihan}" style="background-color:#e74c3c; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.85rem; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                        <i class="fas fa-trash"></i> Hapus
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Pasang event listener untuk tombol hapus
+    tbody.querySelectorAll('.btn-delete-latihan').forEach(btn => {
+        btn.onclick = async () => {
+            const id = btn.getAttribute('data-id');
+            if (confirm('Apakah Anda yakin ingin menghapus program latihan ini?')) {
+                await fetchAPI(`tb_master_latihan/${id}`, 'DELETE');
+                showToast('🗑️ Program latihan berhasil dihapus!', 'success');
+                await renderCoachTrainingList();
+            }
+        };
+    });
+
+    // Inisialisasi event modal tambah latihan
+    setupAddTrainingModal();
+}
+
+function setupAddTrainingModal() {
+    const modal = document.getElementById('modal-add-latihan');
+    const btnOpen = document.getElementById('btn-open-modal-add-latihan');
+    const btnClose = document.getElementById('btn-close-modal-add-latihan');
+    const btnCancel = document.getElementById('btn-cancel-add-latihan');
+    const form = document.getElementById('form-add-latihan');
+
+    if (!btnOpen || !modal) return;
+
+    btnOpen.onclick = () => {
+        if (form) form.reset();
+        modal.style.display = 'block';
+    };
+
+    const closeModal = () => {
+        modal.style.display = 'none';
+        if (form) form.reset();
+    };
+
+    if (btnClose) btnClose.onclick = closeModal;
+    if (btnCancel) btnCancel.onclick = closeModal;
+
+    if (form && !form.dataset.listenerAttached) {
+        form.dataset.listenerAttached = 'true';
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const kategori = document.getElementById('input-kategori-latihan').value.trim();
+            const nama = document.getElementById('input-nama-latihan').value.trim();
+
+            if (!kategori || !nama) {
+                showToast('⚠️ Kategori dan Nama Latihan wajib diisi.', 'error');
+                return;
+            }
+
+            const newLat = {
+                id_latihan: 'LAT-' + Date.now(),
+                kategori: kategori,
+                nama: nama
+            };
+
+            await fetchAPI('tb_master_latihan', 'POST', newLat);
+            showToast('🎉 Program latihan berhasil ditambahkan!', 'success');
+            closeModal();
+            await renderCoachTrainingList();
+        };
+    }
+}
+
+// ==========================================================================
+// FUNGSI KOMPRESI & UNGGAH FOTO BUKTI LATIHAN (CANVAS)
+// ==========================================================================
+let currentTrainingFotoBase64 = "";
+
+function compressImage(file, maxWidth = 900, quality = 0.65) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                // Skala proporsional agar tidak gepeng
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Ekspor ke Base64 format JPEG terkompresi
+                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedBase64);
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+}
+
+// Modal helper untuk menampilkan bukti foto latihan
+window.riwayatFotoMap = window.riwayatFotoMap || {};
+
+window.openFotoBuktiModalById = function(id) {
+    const modal = document.getElementById('modal-view-foto');
+    const img = document.getElementById('img-modal-view-target');
+    const btnClose = document.getElementById('btn-close-view-foto');
+    if (modal && img && window.riwayatFotoMap && window.riwayatFotoMap[id]) {
+        img.src = window.riwayatFotoMap[id];
+        modal.style.display = 'block';
+        if (btnClose) {
+            btnClose.onclick = () => { modal.style.display = 'none'; };
+        }
+    }
+};
+
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('modal-view-foto');
+    if (e.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+
+function setupTrainingPhotoUpload() {
+    const btnChoose = document.getElementById('btn-choose-foto-latihan');
+    const inputFoto = document.getElementById('input-foto-latihan');
+    const previewBox = document.getElementById('foto-latihan-preview-box');
+    const imgPreview = document.getElementById('img-preview-latihan');
+    const btnRemove = document.getElementById('btn-remove-foto-latihan');
+    const infoText = document.getElementById('foto-latihan-info');
+    const sizeBadge = document.getElementById('foto-latihan-size-badge');
+
+    if (!btnChoose || !inputFoto) return;
+
+    btnChoose.onclick = () => {
+        inputFoto.click();
+    };
+
+    if (!inputFoto.dataset.listenerAttached) {
+        inputFoto.dataset.listenerAttached = 'true';
+        inputFoto.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            showLoader();
+            try {
+                const base64Compressed = await compressImage(file);
+                currentTrainingFotoBase64 = base64Compressed;
+
+                if (imgPreview) imgPreview.src = base64Compressed;
+                if (previewBox) previewBox.style.display = 'block';
+
+                const approxSizeKB = Math.round((base64Compressed.length * (3 / 4)) / 1024);
+                if (sizeBadge) sizeBadge.textContent = `✓ Foto berhasil dikompresi (~${approxSizeKB} KB)`;
+                if (infoText) infoText.textContent = file.name;
+            } catch (err) {
+                console.error('Gagal kompresi foto:', err);
+                showToast('⚠️ Gagal memproses foto. Silakan coba lagi.', 'error');
+            } finally {
+                hideLoader();
+            }
+        };
+    }
+
+    if (btnRemove) {
+        btnRemove.onclick = () => {
+            currentTrainingFotoBase64 = "";
+            inputFoto.value = "";
+            if (previewBox) previewBox.style.display = 'none';
+            if (infoText) infoText.textContent = "Belum ada foto";
+            if (sizeBadge) sizeBadge.textContent = "";
+        };
+    }
+}
+
 // --- FUNGSI DAFTAR LATIHAN ---
 async function renderTrainingList() {
     const dataLatihan = await fetchAPI('tb_master_latihan') || [];
@@ -1101,6 +1328,9 @@ async function renderTrainingList() {
         `;
     });
 
+    // Inisialisasi logika upload foto latihan
+    setupTrainingPhotoUpload();
+
     const btnFinish = document.getElementById('btn-finish-training');
     btnFinish.onclick = async () => {
         const session = JSON.parse(sessionStorage.getItem('app_session'));
@@ -1114,7 +1344,7 @@ async function renderTrainingList() {
                 tanggal: dayjs().format('YYYY-MM-DD HH:mm:ss'), 
                 id_latihan: cb.value, 
                 status_selesai: true,
-                catatan_pelatih: ""
+                foto: currentTrainingFotoBase64 || ""
             };
             promises.push(fetchAPI('tb_riwayat_latihan', 'POST', newRiwayat));
             checkedCount++;
@@ -1125,6 +1355,15 @@ async function renderTrainingList() {
             
             // Reset form Latihan dengan uncheck semua kotak
             document.querySelectorAll('.check-latihan:checked').forEach(cb => cb.checked = false);
+
+            // Reset upload foto
+            currentTrainingFotoBase64 = "";
+            const inputFoto = document.getElementById('input-foto-latihan');
+            if (inputFoto) inputFoto.value = "";
+            const previewBox = document.getElementById('foto-latihan-preview-box');
+            if (previewBox) previewBox.style.display = 'none';
+            const infoText = document.getElementById('foto-latihan-info');
+            if (infoText) infoText.textContent = "Belum ada foto";
 
             showToast('Latihan hari ini berhasil disimpan! ✅', 'success');
             if (session.role === 'atlet') {
@@ -1266,7 +1505,7 @@ function setupAssessmentModalActions() {
             id_riwayat_ass: 'RASS-' + Date.now() + Math.floor(Math.random() * 100),
             user_id: selectedAthleteId,
             //id_pelatih: session.id_user,       // <--- TAMBAHAN VALIDASI
-            nama_pelatih: session.nama,        // <--- TAMBAHAN VALIDASI
+            //nama_pelatih: session.nama,        // <--- TAMBAHAN VALIDASI
             tanggal: dayjs().format('YYYY-MM-DD HH:mm:ss'),
             id_assessment: selectedAssessmentId,
             // ... (lanjutan hasil_metrik dan catatan_pelatih seperti sebelumnya)
@@ -1281,8 +1520,7 @@ function setupAssessmentModalActions() {
                     skor_1_10: parseInt(document.getElementById('ass-input-konsistensi-skor').value)
                 }
             },
-            //catatan_pelatih: document.getElementById('ass-input-catatan').value.trim()
-           catatan_pelatih: document.getElementById('ass-input-catatan').value.trim() + " - " + session.nama
+            catatan_pelatih: document.getElementById('ass-input-catatan').value.trim() + " - " + session.nama
         };
 
         await fetchAPI('tb_riwayat_assessment', 'POST', newRecord);
@@ -1304,7 +1542,7 @@ function setupAssessmentModalActions() {
     // SIMPAN AKHIR MODAL EVALUASI (UPDATE LEVEL & KEKURANGAN UTAMA DI TB_USERS)
     document.getElementById('btn-submit-final-evaluation').onclick = async () => {
         const usersDB = await fetchAPI('tb_users') || [];
-        const atletActive = usersDB.find(u => u.id_user === selectedAthleteId);
+        const atletActive = usersDB.find(u => u.id_user === selectedAthleteId); // kesalahan
 
         if (atletActive) {
             atletActive.level = document.getElementById('eval-status-level').value;
@@ -1857,3 +2095,130 @@ function keatas(){
         })
     }, 1000)
 }
+
+function createTombolFoto(id_latihan){
+    let tombol = document.createElement('button');
+    tombol.textContent = "tekan";
+    tombol.onclick = () => {
+        bukaFoto(id_latihan);
+    }
+    document.getElementById(id_latihan).appendChild(tombol);
+}
+
+let currentViewerInstance = null;
+
+function setupViewerJs(imgElement) {
+    if (typeof Viewer === 'undefined') return;
+
+    if (currentViewerInstance) {
+        currentViewerInstance.destroy();
+        currentViewerInstance = null;
+    }
+
+    currentViewerInstance = new Viewer(imgElement, {
+        inline: false,
+        button: true,
+        navbar: false,
+        title: false,
+        toolbar: {
+            zoomIn: 1,
+            zoomOut: 1,
+            oneToOne: 1,
+            reset: 1,
+            rotateLeft: 1,
+            rotateRight: 1,
+            flipHorizontal: 1,
+            flipVertical: 1,
+        },
+        zIndex: 20000, // Di atas modal backdrop (10001)
+        transition: true
+    });
+}
+
+async function bukaFoto(id_latihan) {
+    const modal = document.getElementById('modal-view-foto');
+    const img = document.getElementById('img-modal-view-target');
+    const btnClose = document.getElementById('btn-close-view-foto');
+    const btnFullscreen = document.getElementById('btn-fullscreen-zoom-foto');
+    const hintText = document.getElementById('foto-zoom-hint');
+
+    if (!modal || !img) return;
+
+    // Reset status & gambar
+    img.style.display = 'none';
+    img.src = '';
+    if (btnFullscreen) btnFullscreen.style.display = 'none';
+    if (hintText) hintText.style.display = 'none';
+
+    let infoStatus = document.getElementById('modal-view-foto-status');
+    if (!infoStatus) {
+        infoStatus = document.createElement('p');
+        infoStatus.id = 'modal-view-foto-status';
+        infoStatus.style.padding = '20px';
+        infoStatus.style.color = '#666';
+        infoStatus.style.fontSize = '0.95rem';
+        img.parentNode.insertBefore(infoStatus, img);
+    }
+    infoStatus.textContent = 'Memuat bukti foto latihan...';
+    infoStatus.style.display = 'block';
+
+    // Tampilkan modal
+    modal.style.display = 'block';
+
+    // Handler tutup modal
+    if (btnClose) {
+        btnClose.onclick = () => {
+            modal.style.display = 'none';
+            if (currentViewerInstance) {
+                currentViewerInstance.destroy();
+                currentViewerInstance = null;
+            }
+        };
+    }
+
+    // Handler tombol Buka Layar Penuh (Zoom)
+    if (btnFullscreen) {
+        btnFullscreen.onclick = () => {
+            if (currentViewerInstance) {
+                currentViewerInstance.show();
+            } else if (typeof Viewer !== 'undefined' && img.src) {
+                setupViewerJs(img);
+                if (currentViewerInstance) currentViewerInstance.show();
+            }
+        };
+    }
+
+    try {
+        // 1. Cek di memori lokal jika sudah ada
+        let fotoData = (window.riwayatFotoMap && window.riwayatFotoMap[id_latihan]) ? window.riwayatFotoMap[id_latihan] : null;
+
+        // 2. Jika belum ada di memori, ambil dari endpoint database via id_latihan
+        if (!fotoData) {
+            const data = await fetchAPI(`tb_riwayat_latihan/${id_latihan}`);
+            if (data && data.foto && data.foto.trim() !== '') {
+                fotoData = data.foto;
+                window.riwayatFotoMap = window.riwayatFotoMap || {};
+                window.riwayatFotoMap[id_latihan] = fotoData;
+            }
+        }
+
+        if (fotoData) {
+            img.src = fotoData;
+            img.style.display = 'block';
+            infoStatus.style.display = 'none';
+            if (btnFullscreen) btnFullscreen.style.display = 'flex';
+            if (hintText) hintText.style.display = 'block';
+
+            // Inisialisasi Viewer.js agar foto bisa diklik langsung untuk Fullscreen & Zoom
+            setupViewerJs(img);
+        } else {
+            infoStatus.textContent = 'Tidak ada bukti foto untuk latihan ini.';
+            if (btnFullscreen) btnFullscreen.style.display = 'none';
+            if (hintText) hintText.style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Gagal mengambil foto latihan:', err);
+        infoStatus.textContent = 'Gagal memuat foto latihan.';
+    }
+}
+window.bukaFoto = bukaFoto;
