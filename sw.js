@@ -1,16 +1,17 @@
-const CACHE_NAME = 'tst3d-v3';
+const CACHE_NAME = 'tst3d-v4';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting(); // Langsung aktif tanpa menunggu tab ditutup
 });
 
 self.addEventListener('activate', (event) => {
-    // Bersihkan cache lama jika versi berubah
+    // Bersihkan SEMUA cache lama (agar file app.js dan data API lama terhapus total)
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
                     if (cacheName !== CACHE_NAME) {
+                        console.log('[ServiceWorker] Menghapus cache lama:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
@@ -21,37 +22,45 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Hanya proses permintaan GET (jangan cache POST API)
+    // Hanya proses permintaan GET
     if (event.request.method !== 'GET') return;
 
+    const url = new URL(event.request.url);
+    const pathname = url.pathname.toLowerCase();
+
+    // DAFTAR EKSTENSI ASET 3D YANG BOLEH DI-CACHE
+    const model3DExts = ['.glb', '.gltf', '.fbx', '.bin'];
+    const is3DAsset = model3DExts.some(ext => pathname.endsWith(ext));
+
+    // JIKA BUKAN MODEL 3D (misal: app.js, index.html, REST API /api/, css):
+    // LEWATI TOTAL (Bypass). Browser akan selalu mengambil data segar/terbaru secara live.
+    if (!is3DAsset) {
+        return;
+    }
+
+    // HANYA UNTUK ASET 3D: Gunakan strategi Cache-First (Cepat, hemat kuota, cegah T-Pose)
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            // 1. Jika ada di cache (memori lokal), langsung berikan! (Instan)
             if (cachedResponse) {
                 return cachedResponse;
             }
 
-            // 2. Jika tidak ada di cache, minta dari internet (atau lokal folder)
             return fetch(event.request).then((networkResponse) => {
-                // Pastikan responsnya valid
                 if (!networkResponse || networkResponse.status !== 200) {
                     return networkResponse;
                 }
 
-                // Clone respons untuk disimpan ke cache (karena stream hanya bisa dibaca 1x)
                 const responseToCache = networkResponse.clone();
 
                 caches.open(CACHE_NAME).then((cache) => {
-                    // Masukkan ke dalam cache untuk masa depan (tangkap error jika file terlalu besar/kuota habis)
                     cache.put(event.request, responseToCache).catch(err => {
-                        console.warn('[ServiceWorker] Gagal menyimpan ke cache (mungkin ukuran file terlalu besar):', err);
+                        console.warn('[ServiceWorker] Gagal menyimpan model 3D ke cache:', err);
                     });
                 });
 
                 return networkResponse;
             }).catch((error) => {
-                // Gagal fetch (misal: offline dan tidak ada di cache)
-                console.error('[ServiceWorker] Fetch failed:', error);
+                console.error('[ServiceWorker] Gagal memuat aset 3D:', error);
                 throw error;
             });
         })
