@@ -1,3 +1,4 @@
+// update
 const CACHE_NAME = 'tst3d-v4';
 
 self.addEventListener('install', (event) => {
