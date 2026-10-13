@@ -1265,7 +1265,7 @@ function setupAssessmentModalActions() {
         const newRecord = {
             id_riwayat_ass: 'RASS-' + Date.now() + Math.floor(Math.random() * 100),
             user_id: selectedAthleteId,
-            id_pelatih: session.id_user,       // <--- TAMBAHAN VALIDASI
+            //id_pelatih: session.id_user,       // <--- TAMBAHAN VALIDASI
             nama_pelatih: session.nama,        // <--- TAMBAHAN VALIDASI
             tanggal: dayjs().format('YYYY-MM-DD HH:mm:ss'),
             id_assessment: selectedAssessmentId,
@@ -1281,7 +1281,8 @@ function setupAssessmentModalActions() {
                     skor_1_10: parseInt(document.getElementById('ass-input-konsistensi-skor').value)
                 }
             },
-            catatan_pelatih: document.getElementById('ass-input-catatan').value.trim()
+            //catatan_pelatih: document.getElementById('ass-input-catatan').value.trim()
+           catatan_pelatih: document.getElementById('ass-input-catatan').value.trim() + " - " + session.nama
         };
 
         await fetchAPI('tb_riwayat_assessment', 'POST', newRecord);
